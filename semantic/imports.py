@@ -13,6 +13,7 @@ CAMERA_I=np.array([
 CAMERA_I_INV=np.linalg.inv(CAMERA_I)
 
 RELATIONSHIP_TYPES=('left','right','below','above','infront','behind')
+DIRECTIONS=('Omni_F', 'Omni_B', 'Omni_R', 'Omni_L')
 
 class ViewObject:
     __slots__ = ['label', 'bbox', 'centroid_i', 'centroid_c', 'color']
@@ -32,6 +33,17 @@ class ViewObject:
 
     def __str__(self):
         return f'{self.label} at {self.centroid_i} color {self.color}'
+
+def draw_scenegraph_on_image(img, scene_graph_or_relationships):
+    relationships = scene_graph_or_relationships if type(scene_graph_or_relationships) is list else scene_graph_or_relationships.relationships
+    
+    for rel in relationships:
+        for p in (rel[0], rel[2]):
+            p.draw_on_image(img)
+
+        p0,p1= (int(rel[0].centroid_i[0]), int(rel[0].centroid_i[1])), (int(rel[2].centroid_i[0]), int(rel[2].centroid_i[1]))
+        cv2.arrowedLine(img, (p0[0],p0[1]), (p1[0],p1[1]), (0,0,255), thickness=3)
+        cv2.putText(img,rel[1]+" of",(p0[0],p0[1]),cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0,0,255), thickness=2)    
 
 class SceneGraph:
     def __init__(self):
@@ -61,13 +73,15 @@ class SceneGraph:
     def draw_on_image(self,img):
         if self.is_empty(): return
         assert type(self.relationships[0][0])==ViewObject #only for debug-SGs
-        for rel in self.relationships:
-            for p in (rel[0], rel[2]):
-                p.draw_on_image(img)
+        draw_scenegraph_on_image(img, self)
 
-            p0,p1= (int(rel[0].centroid_i[0]), int(rel[0].centroid_i[1])), (int(rel[2].centroid_i[0]), int(rel[2].centroid_i[1]))
-            cv2.arrowedLine(img, (p0[0],p0[1]), (p1[0],p1[1]), (0,0,255), thickness=3)
-            cv2.putText(img,rel[1]+" of",(p0[0],p0[1]),cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0,0,255), thickness=2)
+        # for rel in self.relationships:
+        #     for p in (rel[0], rel[2]):
+        #         p.draw_on_image(img)
+
+        #     p0,p1= (int(rel[0].centroid_i[0]), int(rel[0].centroid_i[1])), (int(rel[2].centroid_i[0]), int(rel[2].centroid_i[1]))
+        #     cv2.arrowedLine(img, (p0[0],p0[1]), (p1[0],p1[1]), (0,0,255), thickness=3)
+        #     cv2.putText(img,rel[1]+" of",(p0[0],p0[1]),cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0,0,255), thickness=2)
 
 
 class SceneGraphObject:
