@@ -26,6 +26,9 @@ class SynthiaDataset(Dataset):
 
         file_names=sorted(os.listdir( os.path.join(dirpath_main,'RGB', 'Stereo_Left', DIRECTIONS[0]) ))
 
+        vo_dict=pickle.load(open( os.path.join(dirpath_main,'view_objects.pkl'),'rb') )
+        sg_dict=pickle.load(open( os.path.join(dirpath_main,'scene_graphs.pkl'),'rb') )
+
         for direction in DIRECTIONS:
             for file_name in file_names:
                 self.image_paths.append( os.path.join(dirpath_main, 'RGB', 'Stereo_Left', direction, file_name) )
@@ -36,17 +39,25 @@ class SynthiaDataset(Dataset):
                 self.image_positions.append(camera_E[0:3,3])
                 self.image_orientations.append(Rotation.from_matrix(camera_E[0:3,0:3].T).as_euler('xzy')) #TODO/CARE: Orientations faulty!
 
+                #View-Objects and Scene-Graphs
+                self.image_viewobjects.append(vo_dict[direction][file_name])
+                self.image_scenegraphs.append(sg_dict[direction][file_name])
+
         self.image_paths=np.array(self.image_paths)
         self.image_positions=np.array(self.image_positions)
         self.image_orientations=np.array(self.image_orientations)
+        self.image_viewobjects=np.array(self.image_viewobjects, dtype=np.object)
+        self.image_scenegraphs=np.array(self.image_scenegraphs, dtype=np.object)
 
         if split_indices is not None:
             assert len(split_indices)==len(self.image_paths)
             self.image_paths=self.image_paths[split_indices]
             self.image_positions=self.image_positions[split_indices]
             self.image_orientations=self.image_orientations[split_indices]
+            self.image_viewobjects=self.image_viewobjects[split_indices]
+            self.image_scenegraphs=self.image_scenegraphs[split_indices]
 
-        assert len(self.image_paths)==len(self.image_positions)==len(self.image_orientations)
+        assert len(self.image_paths)==len(self.image_positions)==len(self.image_orientations)==len(self.image_viewobjects)==len(self.image_scenegraphs)
 
         print(f'SynthiaDataset: {len(self.image_paths)} images from {self.dirpath_main}')
 

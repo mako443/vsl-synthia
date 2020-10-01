@@ -36,7 +36,8 @@ from semantic.scenegraphs import create_scenegraph_from_viewobjects, score_scene
 '''
 Module to create View-Objects and Scene-Graphs for the data
 '''
-for base_dir in ('data/SYNTHIA-SEQS-04-SUMMER/', 'data/SYNTHIA-SEQS-04-DAWN/'):
+#for base_dir in ('data/SYNTHIA-SEQS-04-SUMMER/', 'data/SYNTHIA-SEQS-04-DAWN/', 'data/SYNTHIA-SEQS-04-WINTER/'):
+for base_dir in ('data/SYNTHIA-SEQS-04-WINTER/', ):
     file_names=os.listdir( os.path.join(base_dir,'RGB', 'Stereo_Left', DIRECTIONS[0]) )
     print(f'{len(file_names)} positions for {base_dir}...')
 
