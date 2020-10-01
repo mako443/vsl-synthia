@@ -19,6 +19,11 @@ def create_view_objects(rgb_image, label_image, depth_image):
         #if label not in ('Fence','Pole'):continue
         label_mask= np.uint8(label_image==label_id)
 
+        # if label=='Building':
+        #     cv2.imshow("l", label_mask*255); cv2.waitKey()
+        #     label_mask[depth_mask==255]=False
+        #     cv2.imshow("l", label_mask*255); cv2.waitKey()
+
         cc_retval, cc_labels, cc_stats, cc_centroids = cv2.connectedComponentsWithStats(label_mask)
 
         for i in range(1, len(cc_centroids)):
@@ -41,14 +46,25 @@ def create_view_objects(rgb_image, label_image, depth_image):
 
 if __name__=='__main__':
     labels=cv2.imread('data/testim/gt_label.png', cv2.IMREAD_UNCHANGED)[:,:,2]
-    depth=cv2.imread('data/testim/depth.png', cv2.IMREAD_UNCHANGED)
+    depth=cv2.imread('data/testim/depth.png', cv2.IMREAD_UNCHANGED)[:,:,0]
     rgb=cv2.imread('data/testim/000000.png')
 
-    view_objects=create_view_objects(rgb, labels, depth)
+    depth_mask=depth.astype(np.float32)
+    depth_mask[depth_mask>10000]=10000
+    depth_mask-=depth_mask.min()
+    depth_mask/=depth_mask.max()
+    depth_mask=np.uint8(depth_mask*255)
+    depth_mask=cv2.GaussianBlur(depth_mask,(5,5),0)
+    depth_mask=cv2.Canny(depth_mask, 15,150)
+    
+    element = cv2.getStructuringElement(cv2.MORPH_RECT, (2*3 + 1, 2*3+1), (3, 3))
+    depth_mask = cv2.dilate(depth_mask, element)
+
+    view_objects=create_view_objects(rgb, labels, depth, depth_mask)
     print(len(view_objects))
 
     for v in view_objects:
-        #if v.label!='Building':continue
+        if v.label!='Building':continue
         v.draw_on_image(rgb)
         #print(v)
     cv2.imshow("",rgb)

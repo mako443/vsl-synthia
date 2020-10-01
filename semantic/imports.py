@@ -15,6 +15,16 @@ CAMERA_I_INV=np.linalg.inv(CAMERA_I)
 RELATIONSHIP_TYPES=('left','right','below','above','infront','behind')
 DIRECTIONS=('Omni_F', 'Omni_B', 'Omni_R', 'Omni_L')
 
+COLORS=np.array([[   29.6270532 ,  33.86763058,  44.62200417],
+                    [134.37045104, 141.2597133 , 146.89439693],
+                    [ 68.59381666,  78.86635468,  89.16569089],
+                    [ 15.47688686,  17.52295666,  26.45806139],
+                    [150.34269489, 172.11904894, 194.64450904],
+                    [ 47.95475968,  54.83951892,  63.30084586],
+                    [ 96.39856265, 107.18070884, 123.50450738],
+                    [181.32395848, 171.22627764, 156.67673565]])
+COLOR_NAMES=('dark-red', 'bright-gray', 'dark-beige', 'black', 'bright-beige', 'medium-red', 'tan', 'light-blue')
+
 class ViewObject:
     __slots__ = ['label', 'bbox', 'centroid_i', 'centroid_c', 'color']
 
@@ -23,7 +33,7 @@ class ViewObject:
         self.bbox=np.array(bbox) # (xmin,ymin,zmin,xmax,ymax,zmax)
         self.centroid_i= centroid_i
         self.centroid_c= centroid_c
-        self.color=color
+        self.color=color #CARE: given as BGR
 
     def draw_on_image(self,img):
         color=CLASS_COLORS[self.label]
