@@ -4,7 +4,7 @@ import os
 import random
 import pickle
 
-from semantic.imports import CLASS_IDS, CLASS_COLORS, RELATIONSHIP_TYPES
+from semantic.imports import CLASS_IDS, CLASS_COLORS, RELATIONSHIP_TYPES, COLORS, COLOR_NAMES
 from semantic.imports import ViewObject, SceneGraph, SceneGraphObject
 
 '''

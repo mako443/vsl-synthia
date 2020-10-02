@@ -15,6 +15,9 @@ CAMERA_I_INV=np.linalg.inv(CAMERA_I)
 RELATIONSHIP_TYPES=('left','right','below','above','infront','behind')
 DIRECTIONS=('Omni_F', 'Omni_B', 'Omni_R', 'Omni_L')
 
+'''
+Colors in 8 clusters, RGB, summer+dawn+winter combined
+'''
 COLORS=np.array([[   29.6270532 ,  33.86763058,  44.62200417],
                     [134.37045104, 141.2597133 , 146.89439693],
                     [ 68.59381666,  78.86635468,  89.16569089],
