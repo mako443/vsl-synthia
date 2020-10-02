@@ -16,19 +16,22 @@ def gather_scoresDict_sceneGraph2ViewObjects(dataset_db, dataset_query):
 
     scores_dict={} # Dict { query-idx: { db-index: score} }
 
+    unused_factor=0.5
+    score_combine='sum'
+
     for query_index in range(len(dataset_query)):
         scores_dict[query_index] = {}
         scene_graph_query=dataset_query.image_scenegraphs[query_index]
 
         for db_index in range(len(dataset_db)):
-            score,_=score_scenegraph_to_viewobjects(scene_graph_query, dataset_db.image_viewobjects[db_index], unused_factor=0.5)
+            score,_=score_scenegraph_to_viewobjects(scene_graph_query, dataset_db.image_viewobjects[db_index], unused_factor=unused_factor, score_combine=score_combine)
             scores_dict[query_index][db_index]=score
         
         assert len(scores_dict[query_index])==len(dataset_db)
 
     assert len(scores_dict)==len(dataset_query)
 
-    save_name=f'scores_SG2VO_{dataset_query.scene_name}-{dataset_db.scene_name}.pkl'
+    save_name=f'scores_SG2VO_{len(dataset_query)}_{len(dataset_db)}_u{unused_factor}_sc{score_combine}.pkl'
     print('Saving SG-scores...',save_name)
     pickle.dump(scores_dict, open(save_name,'wb'))
 
