@@ -102,8 +102,8 @@ class SceneGraphObject:
         sgo=SceneGraphObject()
         sgo.label=v.label
 
-        #color_distances= np.linalg.norm( COLORS-v.color, axis=1 )
-        #sgo.color=COLOR_NAMES[ np.argmin(color_distances) ] #TODO
+        color_distances= np.linalg.norm( COLORS-v.color, axis=1 )
+        sgo.color=COLOR_NAMES[ np.argmin(color_distances) ]
 
         return sgo
     

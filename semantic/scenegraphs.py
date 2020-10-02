@@ -73,7 +73,8 @@ def create_scenegraph_from_viewobjects(view_objects, return_debug_sg=False):
     else: return scene_graph
 
 # TODO/CARE: use unused_factor for this dataset?
-def score_scenegraph_to_viewobjects(scene_graph, view_objects, unused_factor=0.5):
+def score_scenegraph_to_viewobjects(scene_graph, view_objects, unused_factor=0.5, score_combine='multiply'):
+    assert score_combine in ('multiply','sum')
     MIN_SCORE=0.1 #OPTION: hardest penalty for relationship not found
     best_groundings=[None for i in range(len(scene_graph.relationships))]
     best_scores=[MIN_SCORE for i in range(len(scene_graph.relationships))] 
@@ -102,6 +103,9 @@ def score_scenegraph_to_viewobjects(scene_graph, view_objects, unused_factor=0.5
                     best_groundings[i_relation]=(sub,rel_type,obj)
                     best_scores[i_relation]=score        
 
+    if score_combine=='multiply': final_score = np.prod(best_scores)
+    if score_combine=='sum':      final_score = np.sum(best_scores)
+
     if unused_factor is not None:
         unused_view_objects=[v for v in view_objects]
         for grounding in best_groundings:
@@ -109,9 +113,9 @@ def score_scenegraph_to_viewobjects(scene_graph, view_objects, unused_factor=0.5
                 if grounding[0] in unused_view_objects: unused_view_objects.remove(grounding[0])                    
                 if grounding[2] in unused_view_objects: unused_view_objects.remove(grounding[2])
 
-        return np.prod(best_scores) * unused_factor**(len(unused_view_objects)), best_groundings
-    else:
-        return np.prod(best_scores), best_groundings                                  
+        final_score*= unused_factor**(len(unused_view_objects))
+
+    return final_score, best_groundings                                  
 
 if __name__=='__main__':
     labels=cv2.imread('data/testim/gt_label.png', cv2.IMREAD_UNCHANGED)[:,:,2]
