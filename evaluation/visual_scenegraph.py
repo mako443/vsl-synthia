@@ -28,8 +28,9 @@ def gather_scoresDict_sceneGraph2ViewObjects(dataset_db, dataset_query):
 
     assert len(scores_dict)==len(dataset_query)
 
-    print('Saving SG-scores...')
-    pickle.dump(scores_dict, open(f'scores_SG2VO_{len(dataset_query)}_{len(dataset_db)}.pkl','wb'))
+    save_name=f'scores_SG2VO_{dataset_query.scene_name}-{dataset_db.scene_name}.pkl'
+    print('Saving SG-scores...',save_name)
+    pickle.dump(scores_dict, open(save_name,'wb'))
 
 
 if __name__=='__main__':

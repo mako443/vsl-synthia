@@ -4,7 +4,7 @@ import os
 import random
 import pickle
 
-from semantic.imports import CLASS_IDS, CLASS_COLORS, RELATIONSHIP_TYPES
+from semantic.imports import CLASS_IDS, CLASS_COLORS, RELATIONSHIP_TYPES, COLORS, COLOR_NAMES
 from semantic.imports import ViewObject, SceneGraph, SceneGraphObject
 
 '''
@@ -73,6 +73,7 @@ def create_scenegraph_from_viewobjects(view_objects, return_debug_sg=False):
     else: return scene_graph
 
 # TODO/CARE: use unused_factor for this dataset?
+# TODO: test sum instead of mult
 def score_scenegraph_to_viewobjects(scene_graph, view_objects, unused_factor=0.5):
     MIN_SCORE=0.1 #OPTION: hardest penalty for relationship not found
     best_groundings=[None for i in range(len(scene_graph.relationships))]
@@ -86,15 +87,15 @@ def score_scenegraph_to_viewobjects(scene_graph, view_objects, unused_factor=0.5
         assert type(relation[0] is SceneGraphObject)
 
         subject_label, rel_type, object_label = relation[0].label, relation[1], relation[2].label
-        #subject_color, object_color = relation[0].color,relation[2].color
+        subject_color, object_color = relation[0].color,relation[2].color
 
         for sub in [obj for obj in view_objects if obj.label==subject_label]: 
             for obj in [obj for obj in view_objects if obj.label==object_label]:
                 if sub==obj: continue
 
                 relationship_score= score_relationship_type(sub, rel_type, obj)
-                color_score_sub= 1.0#score_color(sub, subject_color)
-                color_score_obj= 1.0#score_color(obj, object_color)
+                color_score_sub= score_color(sub, subject_color)
+                color_score_obj= score_color(obj, object_color)
 
                 score=relationship_score*color_score_sub*color_score_obj
 

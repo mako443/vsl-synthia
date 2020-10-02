@@ -18,6 +18,9 @@ class SynthiaDataset(Dataset):
         self.return_graph_data=return_graph_data 
         self.transform=transform
 
+        self.scene_name=dirpath_main.split('-')[-1].replace('/','')
+        assert len(self.scene_name)>0
+
         self.image_paths=[]
         self.image_positions=[] #CARE: y-axis is up/down
         self.image_orientations=[] 
@@ -59,7 +62,7 @@ class SynthiaDataset(Dataset):
 
         assert len(self.image_paths)==len(self.image_positions)==len(self.image_orientations)==len(self.image_viewobjects)==len(self.image_scenegraphs)
 
-        print(f'SynthiaDataset: {len(self.image_paths)} images from {self.dirpath_main}')
+        print(f'SynthiaDataset: {self.scene_name}, {len(self.image_paths)} images from {self.dirpath_main}')
 
     def __len__(self):
         return len(self.image_paths)      
