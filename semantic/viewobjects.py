@@ -27,7 +27,7 @@ def create_view_objects(rgb_image, label_image, depth_image):
         cc_retval, cc_labels, cc_stats, cc_centroids = cv2.connectedComponentsWithStats(label_mask)
 
         for i in range(1, len(cc_centroids)):
-            if cc_stats[i,cv2.CC_STAT_AREA]< 40*40: continue #OPTIONS: min-area
+            if cc_stats[i,cv2.CC_STAT_AREA]< 40*40: continue #OPTIONS: min-area, TODO: separate for classes? ~ 40x40 vs. 150x150
 
             object_mask= cc_labels==i
             mindepth, maxdepth= depth_image[object_mask].min(), depth_image[object_mask].max()
