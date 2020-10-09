@@ -73,10 +73,12 @@ def create_scenegraph_from_viewobjects(view_objects, return_debug_sg=False):
     else: return scene_graph
 
 # TODO/CARE: use unused_factor for this dataset?
-# TODO: test sum instead of mult
-def score_scenegraph_to_viewobjects(scene_graph, view_objects, unused_factor=0.5, score_combine='multiply'):
+def score_scenegraph_to_viewobjects(scene_graph, view_objects,min_penalty=0.1, unused_factor=0.5, score_combine='multiply', score_relationship='multiply'):
     assert score_combine in ('multiply','sum')
-    MIN_SCORE=0.1 #OPTION: hardest penalty for relationship not found
+    assert score_relationship in ('multiply','sum')
+    #MIN_SCORE=0.1 #OPTION: hardest penalty for relationship not found
+    MIN_SCORE=min_penalty
+
     best_groundings=[None for i in range(len(scene_graph.relationships))]
     best_scores=[MIN_SCORE for i in range(len(scene_graph.relationships))] 
 
@@ -98,7 +100,9 @@ def score_scenegraph_to_viewobjects(scene_graph, view_objects, unused_factor=0.5
                 color_score_sub= 1.0#score_color(sub, subject_color)
                 color_score_obj= 1.0#score_color(obj, object_color)
 
-                score=relationship_score*color_score_sub*color_score_obj
+                #score=relationship_score*color_score_sub*color_score_obj
+                if score_relationship=='multiply': score=relationship_score*color_score_sub*color_score_obj
+                if score_relationship=='sum':      score=relationship_score+color_score_sub+color_score_obj
 
                 if score>best_scores[i_relation]:
                     best_groundings[i_relation]=(sub,rel_type,obj)
