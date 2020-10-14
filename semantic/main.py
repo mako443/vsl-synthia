@@ -6,34 +6,80 @@ import pickle
 import sys
 from sklearn.cluster import KMeans
 
-from semantic.imports import CLASS_IDS, CLASS_COLORS, RELATIONSHIP_TYPES, DIRECTIONS
+from semantic.imports import CLASS_IDS, CLASS_COLORS, RELATIONSHIP_TYPES, DIRECTIONS, CORNERS, CORNER_NAMES, IMAGE_WIDTH, IMAGE_HEIGHT
 from semantic.imports import ViewObject, SceneGraph, SceneGraphObject, draw_scenegraph_on_image
 
 from semantic.viewobjects import create_view_objects
 from semantic.scenegraphs import create_scenegraph_from_viewobjects, score_scenegraph_to_viewobjects
+from dataloading.data_loading import SynthiaDataset
 
-# base_dir='data/SYNTHIA-SEQS-04-SUMMER/selection'
-# file_names=os.listdir( os.path.join(base_dir,'RGB', 'Stereo_Left', DIRECTIONS[0]) )
-# direction='Omni_R'
-# file_name=np.random.choice(file_names)
-# #file_name='000269.png'
-# print(file_name)
+#TODO: Investigate 848->852, rel+nn+unused, rel+corner-05+nn+unused, rel+corner-10+nn+unused
 
-# rgb=   cv2.imread( os.path.join(base_dir,'RGB','Stereo_Left', direction, file_name) )
-# labels=cv2.imread( os.path.join(base_dir,'GT/LABELS','Stereo_Left', direction, file_name), cv2.IMREAD_UNCHANGED)[:,:,2]
-# depth= cv2.imread( os.path.join(base_dir,'Depth','Stereo_Left', direction, file_name), cv2.IMREAD_UNCHANGED)
+# data_summer=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/selection/')
+# data_winter=SynthiaDataset('data/SYNTHIA-SEQS-04-WINTER/selection/')
+# data_dawn=SynthiaDataset('data/SYNTHIA-SEQS-04-DAWN/selection/')
 
-# view_objects=create_view_objects(rgb, labels, depth)
-# sg, sgd=create_scenegraph_from_viewobjects(view_objects, return_debug_sg=True)
-# score,groundings=score_scenegraph_to_viewobjects(sg, view_objects, unused_factor=0.5)
-# print('S',score)
+# #data=data_winter
 
-# img=rgb.copy()
-# sgd.draw_on_image(img)
-# cv2.imshow("",img)
+# query_index=0
+# vo=data_winter.image_viewobjects[query_index]
+# sg, sgd=create_scenegraph_from_viewobjects(vo, return_debug_sg=True)
+# # img=cv2.imread(data.image_paths[query_index])
+# # sgd.draw_on_image(img)
+
+# # score,_ = score_scenegraph_to_viewobjects(sg, vo)
+# # print('score',score)
+
+# # for v in vo:
+# #     print(SceneGraphObject.from_viewobject(v))
+# # cv2.imshow("",img); cv2.waitKey()
+
+# # quit()
+
+# scores=np.zeros(len(data_summer))
+# for test_index in range(len(data_summer)):
+#     score,_= score_scenegraph_to_viewobjects(sg, data_summer.image_viewobjects[test_index], score_combine='mean')
+#     scores[test_index]=score
+
+# sorted_indices=np.argsort( -1.0*scores)
+# print('sorted indices', sorted_indices[0:10])
+# print('index',np.argwhere(sorted_indices==297))
+# print('index',np.argwhere(sorted_indices==307))
+# print('--')
+# print('index',np.argwhere(sorted_indices==308))
+
+# print('\n---\n')
+
+# qidx,didx=0,0
+
+# vo_q=data_winter.image_viewobjects[qidx]
+# sg_q,sgd_q=create_scenegraph_from_viewobjects(vo_q,return_debug_sg=True)
+# img_q=cv2.imread(data_winter.image_paths[qidx])
+
+# vo_d=data_summer.image_viewobjects[didx]
+# sg_d,sgd_d=create_scenegraph_from_viewobjects(vo_d,return_debug_sg=True)
+# img_d=cv2.imread(data_summer.image_paths[didx])
+
+# score, groundings=score_scenegraph_to_viewobjects(sg_q, vo_d, verbose=True, score_combine='mean')
+# print(score)
+# for v in vo_d:
+#     v.draw_on_image(img_d)
+
+# draw_scenegraph_on_image(img_q, sgd_q)
+# cv2.imshow("query"+str(qidx),img_q)
+
+# draw_scenegraph_on_image(img_d, groundings)
+# cv2.imshow("db"+str(didx),img_d)
 # cv2.waitKey()
 
-# quit()
+
+
+# for idx in (0,4):
+#     sg, sgd=create_scenegraph_from_viewobjects(data.image_viewobjects[idx], return_debug_sg=True)
+#     rgb=cv2.imread(data.image_paths[idx])
+#     sgd.draw_on_image(rgb)
+#     cv2.imshow(str(idx),rgb)
+# cv2.waitKey()
 
 '''
 Module to create View-Objects and Scene-Graphs for the data
@@ -58,8 +104,9 @@ if __name__=='__main__':
             
 
     if 'create-semantic' in sys.argv:
-        for base_dir in ('data/SYNTHIA-SEQS-04-SUMMER/', 'data/SYNTHIA-SEQS-04-DAWN/', 'data/SYNTHIA-SEQS-04-WINTER/'):
-        #for base_dir in ('data/SYNTHIA-SEQS-04-WINTER/', ):
+        for base_dir in ('data/SYNTHIA-SEQS-04-SUMMER/train', 'data/SYNTHIA-SEQS-04-SUMMER/test/', 
+                         'data/SYNTHIA-SEQS-04-DAWN/train', 'data/SYNTHIA-SEQS-04-DAWN/test/', 
+                         'data/SYNTHIA-SEQS-04-WINTER/train', 'data/SYNTHIA-SEQS-04-WINTER/test/'):
             file_names=os.listdir( os.path.join(base_dir,'RGB', 'Stereo_Left', DIRECTIONS[0]) )
             print(f'{len(file_names)} positions for {base_dir}...')
 

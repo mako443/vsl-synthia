@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name="SYN vis.-sg. eval"
+#SBATCH --job-name="SYN sg eval"
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1,VRAM:12G
@@ -9,4 +9,4 @@
 #SBATCH --output=slurm-%j.out
 #SBATCH --error=slurm-%j.out
 
-srun python3 -m evaluation.visual_scenegraph gather
+srun python3 -m evaluation.visual_scenegraph netvlad-SG2VO

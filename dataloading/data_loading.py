@@ -10,7 +10,7 @@ from scipy.spatial.transform import Rotation
 from semantic.imports import ViewObject, SceneGraph, SceneGraphObject, DIRECTIONS
 
 class SynthiaDataset(Dataset):
-    def __init__(self, dirpath_main,split_indices=None, transform=None, return_graph_data=False):
+    def __init__(self, dirpath_main,transform=None, return_graph_data=False, load_netvlad_features=False):
         assert os.path.isdir(dirpath_main)
 
         self.dirpath_main=dirpath_main
@@ -18,11 +18,12 @@ class SynthiaDataset(Dataset):
         self.return_graph_data=return_graph_data 
         self.transform=transform
 
-        self.scene_name=dirpath_main.split('-')[-1].replace('/','')
+        self.scene_name=dirpath_main.split('-')[-1].replace('/','-')
         assert len(self.scene_name)>0
 
         self.image_paths=[]
         self.image_positions=[] #CARE: y-axis is up/down
+        self.image_omnis=[]
         self.image_orientations=[] 
         self.image_viewobjects=[]
         self.image_scenegraphs=[]
@@ -46,21 +47,29 @@ class SynthiaDataset(Dataset):
                 self.image_viewobjects.append(vo_dict[direction][file_name])
                 self.image_scenegraphs.append(sg_dict[direction][file_name])
 
+                self.image_omnis.append(direction)
+
         self.image_paths=np.array(self.image_paths)
         self.image_positions=np.array(self.image_positions)
+        self.image_omnis=np.array(self.image_omnis)
         self.image_orientations=np.array(self.image_orientations)
         self.image_viewobjects=np.array(self.image_viewobjects, dtype=np.object)
         self.image_scenegraphs=np.array(self.image_scenegraphs, dtype=np.object)
 
-        if split_indices is not None:
-            assert len(split_indices)==len(self.image_paths)
-            self.image_paths=self.image_paths[split_indices]
-            self.image_positions=self.image_positions[split_indices]
-            self.image_orientations=self.image_orientations[split_indices]
-            self.image_viewobjects=self.image_viewobjects[split_indices]
-            self.image_scenegraphs=self.image_scenegraphs[split_indices]
+        if load_netvlad_features:
+            assert os.path.isfile( os.path.join(dirpath_main,'netvlad_features.pkl') )
+            self.image_netvlad_features=pickle.load( open(os.path.join(dirpath_main,'netvlad_features.pkl'), 'rb') )
+            assert len(self.image_netvlad_features)==len(self.image_paths)
 
-        assert len(self.image_paths)==len(self.image_positions)==len(self.image_orientations)==len(self.image_viewobjects)==len(self.image_scenegraphs)
+        # if split_indices is not None:
+        #     assert len(split_indices)==len(self.image_paths)
+        #     self.image_paths=self.image_paths[split_indices]
+        #     self.image_positions=self.image_positions[split_indices]
+        #     self.image_orientations=self.image_orientations[split_indices]
+        #     self.image_viewobjects=self.image_viewobjects[split_indices]
+        #     self.image_scenegraphs=self.image_scenegraphs[split_indices]
+
+        assert len(self.image_paths)==len(self.image_positions)==len(self.image_omnis)==len(self.image_orientations)==len(self.image_viewobjects)==len(self.image_scenegraphs)
 
         print(f'SynthiaDataset: {self.scene_name}, {len(self.image_paths)} images from {self.dirpath_main}')
 
@@ -74,11 +83,53 @@ class SynthiaDataset(Dataset):
         if self.transform:
             image = self.transform(image)
 
-        return image          
+        return image    
+
+class SynthiaDatasetTriplet(SynthiaDataset):
+    def __init__(self, dirpath_main, transform=None, return_graph_data=False, load_netvlad_features=False): 
+        super().__init__(dirpath_main, transform=transform, return_graph_data=return_graph_data,load_netvlad_features=load_netvlad_features)
+        #TODO/better: based on location and angle | needs to resolve angle bugs?
+        
+        #CARE: Thresholds currently in steps between images, calculated from the full dataset -> independent of the split!
+        self.positive_thresh=5 #Maximum of 5 pictures before/after
+        self.negative_thresh=60 #Minimum of 60 pictures before/after
+        self.image_frame_indices=np.array([ int(path.split("/")[-1].split(".")[0]) for path in self.image_paths ])
+
+    def __getitem__(self,anchor_index):
+        anchor_frame_index=self.image_frame_indices[anchor_index]
+        anchor_omni=self.image_omnis[anchor_index]
+
+        #Positive is from same omni
+        positive_indices= np.argwhere( np.bitwise_and(self.image_omnis==anchor_omni, np.bitwise_and(self.image_frame_indices>anchor_frame_index-self.positive_thresh, self.image_frame_indices<anchor_frame_index+self.positive_thresh)))
+        assert len(positive_indices)>0
+        positive_index=np.random.choice(positive_indices.flatten())
+
+        #Negative is from same or other omni
+        negative_indices= np.argwhere( np.bitwise_or(self.image_frame_indices>anchor_frame_index+self.negative_thresh, self.image_frame_indices<anchor_frame_index-self.negative_thresh))
+        assert len(negative_indices)>0
+        negative_index=np.random.choice(negative_indices.flatten())    
+
+        print('Indices: ', anchor_index, positive_index, negative_index)    
+
+        anchor_image  =  Image.open(self.image_paths[anchor_index]).convert('RGB')     
+        positive_image=  Image.open(self.image_paths[positive_index]).convert('RGB')     
+        negative_image=  Image.open(self.image_paths[negative_index]).convert('RGB')  
+
+        #TODO: return SG (here and above)
+
+        if self.transform:
+            anchor_image= self.transform(anchor_image)
+            positive_image= self.transform(positive_image)
+            negative_image= self.transform(negative_image)
+
+        return anchor_image, positive_image, negative_image
+
 
 if __name__=='__main__':
+    summer_triplet=SynthiaDatasetTriplet('data/SYNTHIA-SEQS-04-SUMMER/full')
+    quit()
     dawn  =SynthiaDataset('data/SYNTHIA-SEQS-04-DAWN/')
-    summer=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/')
+
 
     min_dists=[]
     for idx_dawn in range(len(dawn)):

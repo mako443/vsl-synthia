@@ -15,6 +15,9 @@ CAMERA_I_INV=np.linalg.inv(CAMERA_I)
 RELATIONSHIP_TYPES=('left','right','below','above','infront','behind')
 DIRECTIONS=('Omni_F', 'Omni_B', 'Omni_R', 'Omni_L')
 
+CORNER_NAMES=('top-left','top-right','bottom-left','bottom-right','center')
+CORNERS=np.array(( (0.2, 0.2), (0.8,0.2), (0.2,0.8), (0.8,0.8), (0.5,0.5) )).reshape((5,2)) #Corners as relative (x,y) positions
+
 '''
 Colors in 8 clusters, RGB, summer+dawn+winter combined
 '''
@@ -27,6 +30,8 @@ COLORS=np.array([[   29.6270532 ,  33.86763058,  44.62200417],
                     [ 96.39856265, 107.18070884, 123.50450738],
                     [181.32395848, 171.22627764, 156.67673565]])
 COLOR_NAMES=('dark-red', 'bright-gray', 'dark-beige', 'black', 'bright-beige', 'medium-red', 'tan', 'light-blue')
+
+IMAGE_WIDTH, IMAGE_HEIGHT= 1280,760
 
 class ViewObject:
     __slots__ = ['label', 'bbox', 'centroid_i', 'centroid_c', 'color']
@@ -51,6 +56,7 @@ def draw_scenegraph_on_image(img, scene_graph_or_relationships):
     relationships = scene_graph_or_relationships if type(scene_graph_or_relationships) is list else scene_graph_or_relationships.relationships
     
     for rel in relationships:
+        if rel is None: continue
         for p in (rel[0], rel[2]):
             p.draw_on_image(img)
 
@@ -98,12 +104,15 @@ class SceneGraph:
 
 
 class SceneGraphObject:
-    __slots__ = ['label', 'color']
+    __slots__ = ['label', 'color', 'corner']
 
     @classmethod
     def from_viewobject(cls, v):
         sgo=SceneGraphObject()
         sgo.label=v.label
+
+        corner_distances= np.linalg.norm( CORNERS - (v.centroid_i[0:2]/(IMAGE_WIDTH,IMAGE_HEIGHT)), axis=1)
+        sgo.corner= CORNER_NAMES[np.argmin(corner_distances)]
 
         color_distances= np.linalg.norm( COLORS-v.color, axis=1 )
         sgo.color=COLOR_NAMES[ np.argmin(color_distances) ]
