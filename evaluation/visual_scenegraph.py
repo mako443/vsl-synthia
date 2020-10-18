@@ -32,17 +32,12 @@ def gather_scoresDict_sceneGraph2ViewObjects(dataset_db, dataset_query, score_co
 
 
 if __name__=='__main__':
-    dataset_summer=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/') #Len: 3604
-    
-    _,query_indices_dawn=get_split_indices(3400,step=8)
-    dataset_dawn  =SynthiaDataset('data/SYNTHIA-SEQS-04-DAWN/', split_indices=query_indices_dawn) #Len: 3400 
-
-    # if 'Gather-Summer-Summer' in sys.argv:
-    #     train_indices,test_indices=get_split_indices(3604,step=8)
-    #     dataset_train=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/', split_indices=train_indices)
-    #     dataset_test =SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/', split_indices=test_indices)
-
-    #     gather_scoresDict_sceneGraph2ViewObjects(dataset_train, dataset_test)
+    data_summer_train = SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/train', load_netvlad_features=True)
+    data_summer_test  = SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/test', load_netvlad_features=True)
+    data_dawn_train   = SynthiaDataset('data/SYNTHIA-SEQS-04-DAWN/train', load_netvlad_features=True)
+    data_dawn_test    = SynthiaDataset('data/SYNTHIA-SEQS-04-DAWN/test', load_netvlad_features=True)
+    data_winter_train = SynthiaDataset('data/SYNTHIA-SEQS-04-WINTER/train', load_netvlad_features=True)
+    data_winter_test  = SynthiaDataset('data/SYNTHIA-SEQS-04-WINTER/test', load_netvlad_features=True)
 
     if 'Gather-Summer-Summer' in sys.argv:
         train_indices,test_indices=get_split_indices(3604,step=8)
@@ -52,41 +47,7 @@ if __name__=='__main__':
         gather_scoresDict_sceneGraph2ViewObjects(dataset_train, dataset_test, score_combine='multiply') 
 
     if 'Gather-Dawn-Summer' in sys.argv:
-        gather_scoresDict_sceneGraph2ViewObjects(dataset_summer, dataset_dawn)
-
-    if 'SG2VO-Summer-Summer' in sys.argv:
-        train_indices,test_indices=get_split_indices(3604,step=8)
-        dataset_train=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/', split_indices=train_indices)
-        dataset_test =SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/', split_indices=test_indices)
-
-        scores_filename='scores_SG2VO_Summer-Summer.pkl'
-        scores_dict=pickle.load( open('evaluation_res/'+scores_filename, 'rb')); print('Using scores:',scores_filename)
-        print(eval_scoresDict(dataset_train, dataset_test, scores_dict), '\n')
-
-        scores_filename='scores_SG2VO_Summer-Summer_u0.5_scsum.pkl'
-        scores_dict=pickle.load( open('evaluation_res/'+scores_filename, 'rb')); print('Using scores:',scores_filename)
-        print(eval_scoresDict(dataset_train, dataset_test, scores_dict), '\n')
-
-        scores_filename='scores_SG2VO_Summer-Summer_uNone_scmultiply.pkl'
-        scores_dict=pickle.load( open('evaluation_res/'+scores_filename, 'rb')); print('Using scores:',scores_filename)
-        print(eval_scoresDict(dataset_train, dataset_test, scores_dict), '\n')     
-
-        scores_filename='scores_SG2VO_Summer-Summer_u0.5_mp0.01_scmultiply_srmultiply.pkl'
-        scores_dict=pickle.load( open('evaluation_res/'+scores_filename, 'rb')); print('Using scores:',scores_filename)
-        print(eval_scoresDict(dataset_train, dataset_test, scores_dict), '\n')   
-
-        scores_filename='scores_SG2VO_SUMMER-SUMMER_sc-mean.pkl'
-        scores_dict=pickle.load( open('evaluation_res/'+scores_filename, 'rb')); print('Using scores:',scores_filename)
-        print(eval_scoresDict(dataset_train, dataset_test, scores_dict), '\n')  
-
-        scores_filename='scores_SG2VO_SUMMER-SUMMER_sc-multiply.pkl'
-        scores_dict=pickle.load( open('evaluation_res/'+scores_filename, 'rb')); print('Using scores:',scores_filename)
-        print(eval_scoresDict(dataset_train, dataset_test, scores_dict), '\n')                                  
-
-    if 'SG2VO-Dawn-Summer' in sys.argv:
-        scores_filename='scores_SG2VO_DAWN-SUMMER.pkl'
-        scores_dict=pickle.load( open('evaluation_res/'+scores_filename, 'rb')); print('Using scores:',scores_filename)
-        print(eval_scoresDict(dataset_summer, dataset_dawn, scores_dict), '\n')  
+        gather_scoresDict_sceneGraph2ViewObjects(dataset_summer, dataset_dawn)                               
 
     if 'netvlad-SG2VO' in sys.argv:
         train_indices,test_indices=get_split_indices(3604,step=8)    

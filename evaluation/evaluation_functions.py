@@ -34,14 +34,14 @@ def eval_scoresDict(dataset_db, dataset_query, scores_dict, top_k=(1,3,5,10)):
     return pos_results, ori_results
 
 
-def eval_featureVectors(dataset_db, dataset_query, top_k=(1,3,5,10)):
-    #assert len(dataset_db)==len(features_db) and len(dataset_query)==len(features_query)
+def eval_featureVectors(dataset_db, dataset_query, features_db, features_query, top_k=(1,3,5,10)):
+    assert len(dataset_db)==len(features_db) and len(dataset_query)==len(features_query)
     assert len(dataset_db)/1.5 > len(dataset_query)
-    assert dataset_db.image_netvlad_features is not None and dataset_query.image_netvlad_features is not None
+    #assert dataset_db.image_netvlad_features is not None and dataset_query.image_netvlad_features is not None
 
     print(f'eval_featureVectors: {dataset_query.scene_name} -> {dataset_db.scene_name}')
-    features_db=dataset_db.image_netvlad_features
-    features_query=dataset_query.image_netvlad_features
+    # features_db=dataset_db.image_netvlad_features
+    # features_query=dataset_query.image_netvlad_features
 
     image_positions_db, image_orientations_db = dataset_db.image_positions, dataset_db.image_orientations
     image_positions_query, image_orientations_query = dataset_query.image_positions, dataset_query.image_orientations

@@ -8,15 +8,17 @@ from torchvision import transforms
 from scipy.spatial.transform import Rotation
 
 from semantic.imports import ViewObject, SceneGraph, SceneGraphObject, DIRECTIONS
+from visualgeometric.utils import create_scenegraph_data
 
 class SynthiaDataset(Dataset):
-    def __init__(self, dirpath_main,transform=None, return_graph_data=False, load_netvlad_features=False):
+    def __init__(self, dirpath_main,transform=None, return_graph_data=False, load_netvlad_features=False, image_limit=None):
         assert os.path.isdir(dirpath_main)
 
         self.dirpath_main=dirpath_main
         self.transform=transform       
         self.return_graph_data=return_graph_data 
         self.transform=transform
+        self.image_limit=image_limit
 
         self.scene_name=dirpath_main.split('-')[-1].replace('/','-')
         assert len(self.scene_name)>0
@@ -33,6 +35,7 @@ class SynthiaDataset(Dataset):
         vo_dict=pickle.load(open( os.path.join(dirpath_main,'view_objects.pkl'),'rb') )
         sg_dict=pickle.load(open( os.path.join(dirpath_main,'scene_graphs.pkl'),'rb') )
 
+        #TODO: assume naive 90 deg. angles, anchored at F (re-varify across turn and cross-scene)
         for direction in DIRECTIONS:
             for file_name in file_names:
                 self.image_paths.append( os.path.join(dirpath_main, 'RGB', 'Stereo_Left', direction, file_name) )
@@ -56,25 +59,29 @@ class SynthiaDataset(Dataset):
         self.image_viewobjects=np.array(self.image_viewobjects, dtype=np.object)
         self.image_scenegraphs=np.array(self.image_scenegraphs, dtype=np.object)
 
+        assert len(self.image_paths)==len(self.image_positions)==len(self.image_omnis)==len(self.image_orientations)==len(self.image_viewobjects)==len(self.image_scenegraphs)
+
         if load_netvlad_features:
             assert os.path.isfile( os.path.join(dirpath_main,'netvlad_features.pkl') )
             self.image_netvlad_features=pickle.load( open(os.path.join(dirpath_main,'netvlad_features.pkl'), 'rb') )
             assert len(self.image_netvlad_features)==len(self.image_paths)
 
-        # if split_indices is not None:
-        #     assert len(split_indices)==len(self.image_paths)
-        #     self.image_paths=self.image_paths[split_indices]
-        #     self.image_positions=self.image_positions[split_indices]
-        #     self.image_orientations=self.image_orientations[split_indices]
-        #     self.image_viewobjects=self.image_viewobjects[split_indices]
-        #     self.image_scenegraphs=self.image_scenegraphs[split_indices]
+        if return_graph_data:
+            assert os.path.isfile( os.path.join(dirpath_main,'graph_embeddings.pkl') )
+            self.node_embeddings, self.edge_embeddings=pickle.load(open(os.path.join(dirpath_main,'graph_embeddings.pkl'), 'rb'))
+            self.image_scenegraph_data=[ create_scenegraph_data(sg, self.node_embeddings, self.edge_embeddings) for sg in self.image_scenegraphs ]
+            assert len(self.image_scenegraph_data)==len(self.image_scenegraphs)
 
-        assert len(self.image_paths)==len(self.image_positions)==len(self.image_omnis)==len(self.image_orientations)==len(self.image_viewobjects)==len(self.image_scenegraphs)
+            empty_graphs=[1 for sg in self.image_scenegraphs if sg.is_empty()]
+            print(f'Empty Graphs: {np.sum(empty_graphs)} of {len(self.image_positions)}')            
 
         print(f'SynthiaDataset: {self.scene_name}, {len(self.image_paths)} images from {self.dirpath_main}')
 
     def __len__(self):
-        return len(self.image_paths)      
+        if self.image_limit is not None:
+            return min(len(self.image_paths), self.image_limit)
+        else:
+            return len(self.image_paths)      
 
     #Returns the image at the current index
     def __getitem__(self,index):       
@@ -83,11 +90,14 @@ class SynthiaDataset(Dataset):
         if self.transform:
             image = self.transform(image)
 
+        if self.return_graph_data:
+            return {'images': image, 'graphs': self.image_scenegraph_data[index]}
+
         return image    
 
 class SynthiaDatasetTriplet(SynthiaDataset):
-    def __init__(self, dirpath_main, transform=None, return_graph_data=False, load_netvlad_features=False): 
-        super().__init__(dirpath_main, transform=transform, return_graph_data=return_graph_data,load_netvlad_features=load_netvlad_features)
+    def __init__(self, dirpath_main, transform=None, return_graph_data=False, load_netvlad_features=False, image_limit=None): 
+        super().__init__(dirpath_main, transform=transform, return_graph_data=return_graph_data,load_netvlad_features=load_netvlad_features, image_limit=image_limit)
         #TODO/better: based on location and angle | needs to resolve angle bugs?
         
         #CARE: Thresholds currently in steps between images, calculated from the full dataset -> independent of the split!
@@ -109,23 +119,36 @@ class SynthiaDatasetTriplet(SynthiaDataset):
         assert len(negative_indices)>0
         negative_index=np.random.choice(negative_indices.flatten())    
 
-        print('Indices: ', anchor_index, positive_index, negative_index)    
+        #print('Indices: ', anchor_index, positive_index, negative_index)    
 
         anchor_image  =  Image.open(self.image_paths[anchor_index]).convert('RGB')     
         positive_image=  Image.open(self.image_paths[positive_index]).convert('RGB')     
         negative_image=  Image.open(self.image_paths[negative_index]).convert('RGB')  
-
-        #TODO: return SG (here and above)
 
         if self.transform:
             anchor_image= self.transform(anchor_image)
             positive_image= self.transform(positive_image)
             negative_image= self.transform(negative_image)
 
+        if self.return_graph_data:
+            return {'images_anchor':anchor_image, 'images_positive':positive_image, 'images_negative':negative_image,
+                    'graphs_anchor':self.image_scenegraph_data[anchor_index], 'graphs_positive':self.image_scenegraph_data[positive_index], 'graphs_negative':self.image_scenegraph_data[negative_index]}
+
         return anchor_image, positive_image, negative_image
+
+#TODO
+class SynthiaDatasetMulti(SynthiaDataset):
+    pass
+
+#TODO
+class SynthiaDatasetMultiTriplet(SynthiaDataset):
+    pass
 
 
 if __name__=='__main__':
+    summer=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/test', return_graph_data=True)
+    quit()
+
     summer_triplet=SynthiaDatasetTriplet('data/SYNTHIA-SEQS-04-SUMMER/full')
     quit()
     dawn  =SynthiaDataset('data/SYNTHIA-SEQS-04-DAWN/')
