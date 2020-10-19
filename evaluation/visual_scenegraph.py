@@ -8,9 +8,9 @@ from semantic.scenegraphs import score_scenegraph_to_viewobjects
 
 from dataloading.data_loading import SynthiaDataset
 
-def gather_scoresDict_sceneGraph2ViewObjects(dataset_db, dataset_query, score_combine):
+def gather_scoresDict_sceneGraph2ViewObjects(dataset_db, dataset_query):
     assert len(dataset_db)//2>len(dataset_query)
-    print(f'Gathering {dataset_query.scene_name} to {dataset_db.scene_name}, combine: {score_combine}')
+    print(f'Gathering {dataset_query.scene_name} to {dataset_db.scene_name}')
 
     scores_dict={} # Dict { query-idx: { db-index: score} }
 
@@ -19,14 +19,14 @@ def gather_scoresDict_sceneGraph2ViewObjects(dataset_db, dataset_query, score_co
         scene_graph_query=dataset_query.image_scenegraphs[query_index]
 
         for db_index in range(len(dataset_db)):
-            score,_=score_scenegraph_to_viewobjects(scene_graph_query, dataset_db.image_viewobjects[db_index], score_combine=score_combine)
+            score,_=score_scenegraph_to_viewobjects(scene_graph_query, dataset_db.image_viewobjects[db_index])
             scores_dict[query_index][db_index]=score
         
         assert len(scores_dict[query_index])==len(dataset_db)
 
     assert len(scores_dict)==len(dataset_query)
 
-    save_name=f'scores_SG2VO_{dataset_query.scene_name}-{dataset_db.scene_name}_sc-{score_combine}.pkl'
+    save_name=f'scores_SG2VO_{dataset_query.scene_name}-{dataset_db.scene_name}_.pkl'
     print('Saving SG-scores...',save_name)
     pickle.dump(scores_dict, open(save_name,'wb'))
 
@@ -39,15 +39,18 @@ if __name__=='__main__':
     data_winter_train = SynthiaDataset('data/SYNTHIA-SEQS-04-WINTER/train', load_netvlad_features=True)
     data_winter_test  = SynthiaDataset('data/SYNTHIA-SEQS-04-WINTER/test', load_netvlad_features=True)
 
+    # if 'Gather-Summer-Summer' in sys.argv:
+    #     train_indices,test_indices=get_split_indices(3604,step=8)
+    #     dataset_train=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/', split_indices=train_indices)
+    #     dataset_test =SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/', split_indices=test_indices)   
+
+    #     gather_scoresDict_sceneGraph2ViewObjects(dataset_train, dataset_test, score_combine='multiply') 
+
+    # if 'Gather-Dawn-Summer' in sys.argv:
+    #     gather_scoresDict_sceneGraph2ViewObjects(dataset_summer, dataset_dawn)                               
+
     if 'Gather-Summer-Summer' in sys.argv:
-        train_indices,test_indices=get_split_indices(3604,step=8)
-        dataset_train=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/', split_indices=train_indices)
-        dataset_test =SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/', split_indices=test_indices)   
-
-        gather_scoresDict_sceneGraph2ViewObjects(dataset_train, dataset_test, score_combine='multiply') 
-
-    if 'Gather-Dawn-Summer' in sys.argv:
-        gather_scoresDict_sceneGraph2ViewObjects(dataset_summer, dataset_dawn)                               
+        gather_scoresDict_sceneGraph2ViewObjects(data_summer_train, data_summer_test) 
 
     if 'netvlad-SG2VO' in sys.argv:
         train_indices,test_indices=get_split_indices(3604,step=8)    

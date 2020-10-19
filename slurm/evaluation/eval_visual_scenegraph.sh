@@ -9,4 +9,4 @@
 #SBATCH --output=slurm-%j.out
 #SBATCH --error=slurm-%j.out
 
-srun python3 -m evaluation.visual_scenegraph netvlad-SG2VO
+srun python3 -m evaluation.visual_scenegraph Gather-Summer-Summer

@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name="SYN VGE eval"
+#SBATCH --job-name="SYN geom. eval"
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1,VRAM:12G
@@ -9,4 +9,4 @@
 #SBATCH --output=slurm-%j.out
 #SBATCH --error=slurm-%j.out
 
-srun python3 -m evaluation.visual_geometric gather-summer
+srun python3 -m evaluation.visual_geometric GE-match

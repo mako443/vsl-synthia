@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import torch.nn
 import torch.nn.functional as F
+from torch.autograd import Variable
 import torchvision.models
 
 import torch_geometric.data
@@ -45,3 +46,29 @@ class GeometricEmbedding(torch.nn.Module):
         x= x/torch.norm(x, dim=1,keepdim=True) #Norm output
         
         return x
+
+class PairwiseRankingLoss(torch.nn.Module):
+    def __init__(self, margin=1.0):
+        super(PairwiseRankingLoss, self).__init__()
+        self.margin = margin
+
+    def forward(self, im, s): #Norming the input (as in paper) is actually not helpful
+        im=im/torch.norm(im,dim=1,keepdim=True)
+        s=s/torch.norm(s,dim=1,keepdim=True)
+
+        margin = self.margin
+        # compute image-sentence score matrix
+        scores = torch.mm(im, s.transpose(1, 0))
+        #print(scores)
+        diagonal = scores.diag()
+
+        # compare every diagonal score to scores in its column (i.e, all contrastive images for each sentence)
+        cost_s = torch.max(Variable(torch.zeros(scores.size()[0], scores.size()[1]).cuda()), (margin-diagonal).expand_as(scores)+scores)
+        # compare every diagonal score to scores in its row (i.e, all contrastive sentences for each image)
+        cost_im = torch.max(Variable(torch.zeros(scores.size()[0], scores.size()[1]).cuda()), (margin-diagonal).expand_as(scores).transpose(1, 0)+scores)
+
+        for i in range(scores.size()[0]):
+            cost_s[i, i] = 0
+            cost_im[i, i] = 0
+
+        return (cost_s.sum() + cost_im.sum()) / len(im) #Take mean for batch-size stability             
