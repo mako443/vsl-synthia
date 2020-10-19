@@ -13,7 +13,16 @@ from semantic.viewobjects import create_view_objects
 from semantic.scenegraphs import create_scenegraph_from_viewobjects, score_scenegraph_to_viewobjects
 from dataloading.data_loading import SynthiaDataset
 
-#TODO: Investigate 848->852, rel+nn+unused, rel+corner-05+nn+unused, rel+corner-10+nn+unused
+'''
+TODO
+
+Try-depth split B-200 (does not have to work everywhere)
+Merge: small objects in that label, ordered by area, verify that *reduces* the number of blobs (check F-180, B-170)
+Investigate 848->852, rel+nn+unused, rel+corner-05+nn+unused, rel+corner-10+nn+unused
+New, unified scoring
+Investigate 898 -> neighbors (bigger min-areas?, direction via distance/overlap?, ),
+Check SG->SG
+'''
 
 # data_summer=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/selection/')
 # data_winter=SynthiaDataset('data/SYNTHIA-SEQS-04-WINTER/selection/')
