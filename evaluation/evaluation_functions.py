@@ -34,9 +34,10 @@ def eval_scoresDict(dataset_db, dataset_query, scores_dict, top_k=(1,3,5,10)):
     return pos_results, ori_results
 
 
-def eval_featureVectors(dataset_db, dataset_query, features_db, features_query, top_k=(1,3,5,10)):
+def eval_featureVectors(dataset_db, dataset_query, features_db, features_query, top_k=(1,3,5,10), similarity='l2'):
     assert len(dataset_db)==len(features_db) and len(dataset_query)==len(features_query)
     assert len(dataset_db)/1.5 > len(dataset_query)
+    assert similarity in ('l2','cosine')
     #assert dataset_db.image_netvlad_features is not None and dataset_query.image_netvlad_features is not None
 
     print(f'eval_featureVectors: {dataset_query.scene_name} -> {dataset_db.scene_name}')
@@ -55,10 +56,16 @@ def eval_featureVectors(dataset_db, dataset_query, features_db, features_query, 
         ori_dists=np.abs(image_orientations_db[:]-image_orientations_query[query_index])
         ori_dists=np.minimum(ori_dists, 2*np.pi-ori_dists)    
 
-        feature_diffs=features_db-features_query[query_index]
-        feature_diffs=np.linalg.norm(feature_diffs,axis=1)   
+        if similarity=='l2':
+            feature_diffs=features_db-features_query[query_index]
+            feature_diffs=np.linalg.norm(feature_diffs,axis=1)   
+            sorted_indices=np.argsort(feature_diffs) #Low->High
 
-        sorted_indices=np.argsort(feature_diffs) #Low->High
+        #CARE: assumes normed features!
+        if similarity=='cosine':
+            feature_scores=features_db@features_query.T
+            sorted_indices=np.argsort(-1.0*feature_scores) #High->Low
+
         assert len(pos_dists)==len(dataset_db)==len(sorted_indices)
 
         for k in top_k:

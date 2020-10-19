@@ -73,7 +73,7 @@ class SynthiaDataset(Dataset):
             assert len(self.image_scenegraph_data)==len(self.image_scenegraphs)
 
             empty_graphs=[1 for sg in self.image_scenegraphs if sg.is_empty()]
-            print(f'Empty Graphs: {np.sum(empty_graphs)} of {len(self.image_positions)}')            
+            #print(f'Empty Graphs: {np.sum(empty_graphs)} of {len(self.image_positions)}')            
 
         print(f'SynthiaDataset: {self.scene_name}, {len(self.image_paths)} images from {self.dirpath_main}')
 
@@ -146,7 +146,7 @@ class SynthiaDatasetMultiTriplet(SynthiaDataset):
 
 
 if __name__=='__main__':
-    summer=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/test', return_graph_data=True)
+    summer=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/test', return_graph_data=False)
     quit()
 
     summer_triplet=SynthiaDatasetTriplet('data/SYNTHIA-SEQS-04-SUMMER/full')

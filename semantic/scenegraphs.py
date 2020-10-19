@@ -78,7 +78,7 @@ def create_scenegraph_from_viewobjects(view_objects, return_debug_sg=False):
 
 #TODO: score against 10 corners
 #TODO: score all "1.0 - relative" as in SG-SG -> maybe even one unified scoring
-#TODO: afterwards accept results! Try GE and VGE-CO "blindly"!
+#TODO: afterwards accept results! Try GE and VGE-CO "blindly"! -> GE sucks ✖
 def score_scenegraph_to_viewobjects(scene_graph, view_objects, unused_factor=0.5, verbose=False):
     MIN_SCORE=0.1 #OPTION: hardest penalty for relationship not found | TODO: re-adjust based on best metric combination
     best_groundings=[None for i in range(len(scene_graph.relationships))]
