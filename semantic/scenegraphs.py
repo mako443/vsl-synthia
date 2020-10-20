@@ -14,7 +14,7 @@ Strategies:
 -compare convex-hull points (exhaustive compare necessary?)
 '''
 
-### Strategy: centroids
+### Strategy: centroids ###
 def get_distances(sub,obj):
     d=obj.centroid_c-sub.centroid_c
     return (d[0], -d[0], d[1], -d[1], d[2], -d[2])
@@ -27,16 +27,17 @@ def score_relationship_type(sub, rel_type, obj):
     distances=get_distances(sub,obj)
     return np.clip(distances[RELATIONSHIP_TYPES.index(rel_type)] / np.max(distances), 0,1)
 
-def score_color(v: ViewObject, color_name):
-    assert color_name in COLOR_NAMES
-    color_distances= np.linalg.norm( COLORS-v.color, axis=1 )
+# def score_color(v: ViewObject, color_name):
+#     assert color_name in COLOR_NAMES
+#     color_distances= np.linalg.norm( COLORS-v.color, axis=1 )
 
-    score= np.min(color_distances) / color_distances[COLOR_NAMES.index(color_name)]
-    return np.clip(score,0,1)
+#     score= np.min(color_distances) / color_distances[COLOR_NAMES.index(color_name)]
+#     return np.clip(score,0,1)
 
-def score_corner(v: ViewObject, corner_name):
-    distances= np.linalg.norm( CORNERS - (v.centroid_i[0:2]/(IMAGE_WIDTH, IMAGE_HEIGHT) ), axis=1)
-    return np.clip( np.min(distances)/distances[CORNER_NAMES.index(corner_name)] ,0,1)
+# def score_corner(v: ViewObject, corner_name):
+#     distances= np.linalg.norm( CORNERS - (v.centroid_i[0:2]/(IMAGE_WIDTH, IMAGE_HEIGHT) ), axis=1)
+#     return np.clip( np.min(distances)/distances[CORNER_NAMES.index(corner_name)] ,0,1)
+### Strategy: centroids ###
 
 '''
 Strategy: Create a relationship for each object w/ its nearest neighbor (no doublicates)
@@ -76,10 +77,71 @@ def create_scenegraph_from_viewobjects(view_objects, return_debug_sg=False):
     if return_debug_sg: return scene_graph, scene_graph_debug
     else: return scene_graph
 
+def score_scenegraph_to_viewobjects(scene_graph, view_objects, unused_factor=0.5, verbose=False):
+    MIN_SCORE=0.01 #OPTION: hardest penalty for relationship not found | TODO: re-adjust based on best metric combination
+    best_groundings=[None for i in range(len(scene_graph.relationships))]
+    best_scores=[MIN_SCORE for i in range(len(scene_graph.relationships))] 
+
+    #Can't score empty graphs 1.0 then apply unused_factor because the factor is not enough to compensate
+    if scene_graph.is_empty() or len(view_objects)<2:
+        return 0.0, None    
+
+    for i_relation, relation in enumerate(scene_graph.relationships):
+        assert type(relation[0] is SceneGraphObject)
+
+        sub_sgo, rel_type, obj_sgo= relation
+
+        for sub_vo in [v for v in view_objects if v.label==sub_sgo.label]:
+            sub_nn_dists= [ np.linalg.norm(sub_vo.centroid_c - v.centroid_c) for v in view_objects if v!=sub_vo ] #TODO: objects of correct class or all?! -> of all, just like assignment
+
+            sub_vo_color_dists=np.linalg.norm(sub_vo.color - COLORS, axis=1)
+            s_color_sub= 1.0- ( np.linalg.norm(COLORS[COLOR_NAMES.index(sub_sgo.color)] - sub_vo.color) - np.min(sub_vo_color_dists) ) / np.max(sub_vo_color_dists)
+
+            sub_vo_corner_dists=np.linalg.norm(sub_vo.centroid_i[0:2]/(IMAGE_WIDTH, IMAGE_HEIGHT) - CORNERS, axis=1)
+            s_corner_sub= 1.0- ( np.linalg.norm(CORNERS[CORNER_NAMES.index(sub_sgo.corner)] - sub_vo.centroid_i[0:2]/(IMAGE_WIDTH, IMAGE_HEIGHT)) - np.min(sub_vo_corner_dists) ) / np.max(sub_vo_corner_dists)
+
+            for obj_vo in [v for v in view_objects if v.label==obj_sgo.label and v!=sub_vo]:
+                s_reltype=score_relationship_type(sub_vo, rel_type, obj_vo)
+
+                obj_vo_color_dists=np.linalg.norm(obj_vo.color - COLORS, axis=1)
+                s_color_obj= 1.0- ( np.linalg.norm(COLORS[COLOR_NAMES.index(obj_sgo.color)] - obj_vo.color) - np.min(obj_vo_color_dists) ) / np.max(obj_vo_color_dists)
+
+                obj_vo_corner_dists=np.linalg.norm(obj_vo.centroid_i[0:2]/(IMAGE_WIDTH, IMAGE_HEIGHT) - CORNERS, axis=1)
+                s_corner_obj= 1.0- ( np.linalg.norm(CORNERS[CORNER_NAMES.index(obj_sgo.corner)] - obj_vo.centroid_i[0:2]/(IMAGE_WIDTH, IMAGE_HEIGHT)) - np.min(obj_vo_corner_dists) ) / np.max(obj_vo_corner_dists)
+
+                s_nn= 1.0 - ( np.linalg.norm(sub_vo.centroid_c - obj_vo.centroid_c) - np.min(sub_nn_dists) ) / np.max(sub_nn_dists)
+
+                
+                s_ground= s_reltype * s_color_sub * s_color_obj * s_corner_sub * s_corner_obj * s_nn #TODO: reformulate rel-type in same fashion?
+                
+                if s_ground>best_scores[i_relation]:
+                    best_groundings[i_relation]=(sub_vo,rel_type,obj_vo)
+                    best_scores[i_relation]=s_ground
+
+    if verbose:
+        for i in range(len(best_groundings)):
+            if best_groundings[i] is None:
+                print('Not found:', scene_graph.relationships[i][0], scene_graph.relationships[i][1], scene_graph.relationships[i][2] )
+
+    #if score_combine=='multiply': final_score = np.prod(best_scores)
+    #if score_combine=='mean':     final_score = np.mean(best_scores)
+    final_score = np.mean(best_scores)    
+
+    if unused_factor is not None:
+        unused_view_objects=[v for v in view_objects]
+        for grounding in best_groundings:
+            if grounding is not None:
+                if grounding[0] in unused_view_objects: unused_view_objects.remove(grounding[0])                    
+                if grounding[2] in unused_view_objects: unused_view_objects.remove(grounding[2])
+
+        final_score*= unused_factor**(len(unused_view_objects))
+
+    return final_score, best_groundings   
+
 #TODO: score against 10 corners
 #TODO: score all "1.0 - relative" as in SG-SG -> maybe even one unified scoring
 #TODO: afterwards accept results! Try GE and VGE-CO "blindly"! -> GE sucks ✖
-def score_scenegraph_to_viewobjects(scene_graph, view_objects, unused_factor=0.5, verbose=False):
+def score_scenegraph_to_viewobjects_old(scene_graph, view_objects, unused_factor=0.5, verbose=False):
     MIN_SCORE=0.1 #OPTION: hardest penalty for relationship not found | TODO: re-adjust based on best metric combination
     best_groundings=[None for i in range(len(scene_graph.relationships))]
     best_scores=[MIN_SCORE for i in range(len(scene_graph.relationships))] 

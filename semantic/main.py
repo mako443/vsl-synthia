@@ -16,34 +16,77 @@ from dataloading.data_loading import SynthiaDataset
 '''
 TODO
 
-Try-depth split B-200 (does not have to work everywhere)
-Merge: small objects in that label, ordered by area, verify that *reduces* the number of blobs (check F-180, B-170)
-Investigate 848->852, rel+nn+unused, rel+corner-05+nn+unused, rel+corner-10+nn+unused
+Try-depth split B-200 (does not have to work everywhere), use class min-areas (F-160 roof) -> Seems good ✓
+Merge: small objects in that label, ordered by area, verify that *reduces* the number of blobs (check F-180, B-170) -> seems good, don't know how much difference ✓
+
 New, unified scoring
-Investigate 898 -> neighbors (bigger min-areas?, direction via distance/overlap?, ),
+Investigate 848->852, rel+nn+unused, rel+corner-05+nn+unused, rel+corner-10+nn+unused
+Investigate 898 -> before/after (bigger min-areas?, direction via distance/overlap?, ),
 Check SG->SG
 '''
 
-# data_summer=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/selection/')
+#TODO: I need dense db-sets afterall...
+#THOSE TWO -> 2 days break fml -.-
+#TODO: Higher rel-count ?!
+#TODO: no floors?!
+
+data=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/selection/')
+
+#EVAL HAND-PICKED INDICES
+idx0, idx1=0, 6
+vo0, vo1= data.image_viewobjects[idx0], data.image_viewobjects[idx1]
+sg0, sgd0= create_scenegraph_from_viewobjects(vo0, return_debug_sg=True)
+sg1, sgd1= create_scenegraph_from_viewobjects(vo1, return_debug_sg=True)
+
+rgb0, rgb1= cv2.imread(data.image_paths[idx0]), cv2.imread(data.image_paths[idx1])
+rbg_draw=rgb1.copy()
+sgd0.draw_on_image(rgb0)
+sgd1.draw_on_image(rgb1)
+
+score, groundings=score_scenegraph_to_viewobjects(sg0, vo1, unused_factor=0.5)
+print('score:', score)
+draw_scenegraph_on_image(rbg_draw, groundings)
+
+cv2.imshow("idx0", rgb0)
+cv2.imshow("idx1", rgb1)
+cv2.imshow("draw", rbg_draw)
+
+cv2.waitKey()
+quit()
+
+#EVAL HAND-PICKED VS. ALL
+idx=0
+vo= data.image_viewobjects[idx]
+sg, sgd= create_scenegraph_from_viewobjects(vo, return_debug_sg=True)
+scores=np.zeros(len(data))
+for test_index in range(len(data)):
+    score,_= score_scenegraph_to_viewobjects(sg, data.image_viewobjects[test_index], unused_factor=0.5)
+    scores[test_index]=score
+
+sorted_indices=np.argsort( -1.0*scores)
+print('sorted indices', sorted_indices[0:10])
+print('scores', scores[0:10])
+quit()
+
 # data_winter=SynthiaDataset('data/SYNTHIA-SEQS-04-WINTER/selection/')
 # data_dawn=SynthiaDataset('data/SYNTHIA-SEQS-04-DAWN/selection/')
 
 # #data=data_winter
 
-# query_index=0
-# vo=data_winter.image_viewobjects[query_index]
-# sg, sgd=create_scenegraph_from_viewobjects(vo, return_debug_sg=True)
-# # img=cv2.imread(data.image_paths[query_index])
-# # sgd.draw_on_image(img)
+#query_index=0
+#vo=data_winter.image_viewobjects[query_index]
+#sg, sgd=create_scenegraph_from_viewobjects(vo, return_debug_sg=True)
+# img=cv2.imread(data.image_paths[query_index])
+# sgd.draw_on_image(img)
 
-# # score,_ = score_scenegraph_to_viewobjects(sg, vo)
-# # print('score',score)
+# score,_ = score_scenegraph_to_viewobjects(sg, vo)
+# print('score',score)
 
-# # for v in vo:
-# #     print(SceneGraphObject.from_viewobject(v))
-# # cv2.imshow("",img); cv2.waitKey()
+# for v in vo:
+#     print(SceneGraphObject.from_viewobject(v))
+# cv2.imshow("",img); cv2.waitKey()
 
-# # quit()
+# quit()
 
 # scores=np.zeros(len(data_summer))
 # for test_index in range(len(data_summer)):
@@ -90,10 +133,10 @@ Check SG->SG
 #     cv2.imshow(str(idx),rgb)
 # cv2.waitKey()
 
+quit()
 '''
 Module to create View-Objects and Scene-Graphs for the data
 '''
-
 if __name__=='__main__':
     if 'gather-colors' in sys.argv:
         all_colors=[]
@@ -113,9 +156,10 @@ if __name__=='__main__':
             
 
     if 'create-semantic' in sys.argv:
-        for base_dir in ('data/SYNTHIA-SEQS-04-SUMMER/train', 'data/SYNTHIA-SEQS-04-SUMMER/test/', 
-                         'data/SYNTHIA-SEQS-04-DAWN/train', 'data/SYNTHIA-SEQS-04-DAWN/test/', 
-                         'data/SYNTHIA-SEQS-04-WINTER/train', 'data/SYNTHIA-SEQS-04-WINTER/test/'):
+        #for base_dir in ('data/SYNTHIA-SEQS-04-SUMMER/train', 'data/SYNTHIA-SEQS-04-SUMMER/test/', 
+        #                 'data/SYNTHIA-SEQS-04-DAWN/train', 'data/SYNTHIA-SEQS-04-DAWN/test/', 
+        #                 'data/SYNTHIA-SEQS-04-WINTER/train', 'data/SYNTHIA-SEQS-04-WINTER/test/'):
+        for base_dir in ('data/SYNTHIA-SEQS-04-SUMMER/selection/',):
             file_names=os.listdir( os.path.join(base_dir,'RGB', 'Stereo_Left', DIRECTIONS[0]) )
             print(f'{len(file_names)} positions for {base_dir}...')
 
@@ -128,17 +172,17 @@ if __name__=='__main__':
                 for file_name in file_names:
                     rgb=   cv2.imread( os.path.join(base_dir,'RGB','Stereo_Left', direction, file_name) )
                     labels=cv2.imread( os.path.join(base_dir,'GT/LABELS','Stereo_Left', direction, file_name), cv2.IMREAD_UNCHANGED)[:,:,2]
-                    depth= cv2.imread( os.path.join(base_dir,'Depth','Stereo_Left', direction, file_name), cv2.IMREAD_UNCHANGED)
+                    depth= cv2.imread( os.path.join(base_dir,'Depth','Stereo_Left', direction, file_name), cv2.IMREAD_UNCHANGED)[:,:,0]
                     assert rgb is not None and labels is not None and depth is not None
 
                     vo=create_view_objects(rgb, labels, depth)
                     view_objects[direction][file_name]=vo
                     view_object_counts.append(len(vo))
 
-                    sg=create_scenegraph_from_viewobjects(vo)
-                    scene_graphs[direction][file_name]=sg
+                    #sg=create_scenegraph_from_viewobjects(vo)
+                    #scene_graphs[direction][file_name]=sg
 
                 print(f'Done, {np.mean(view_object_counts)} view-objects on average, saving')
 
             pickle.dump(view_objects, open(os.path.join(base_dir,'view_objects.pkl'),'wb'))
-            pickle.dump(scene_graphs, open(os.path.join(base_dir,'scene_graphs.pkl'),'wb'))
+            #pickle.dump(scene_graphs, open(os.path.join(base_dir,'scene_graphs.pkl'),'wb'))

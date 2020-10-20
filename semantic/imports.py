@@ -33,6 +33,27 @@ COLOR_NAMES=('dark-red', 'bright-gray', 'dark-beige', 'black', 'bright-beige', '
 
 IMAGE_WIDTH, IMAGE_HEIGHT= 1280,760
 
+'''
+^MClass         R       G       B       ID
+
+^MVoid          0       0       0       0
+^MSky             128   128     128     1
+^MBuilding        128   0       0       2
+^MRoad            128   64      128     3
+^MSidewalk        0     0       192     4
+^MFence           64    64      128     5
+^MVegetation      128   128     0       6
+^MPole            192   192     128     7
+^MCar             64    0       128     8
+^MTraffic Sign    192   128     128     9
+^MPedestrian      64    64      0       10
+^MBicycle         0     128     192     11
+^MLanemarking   0       172     0       12
+^MReserved      -       -       -       13
+^MReserved      -       -       -       14
+^MTraffic Light 0       128     128     15
+'''
+
 class ViewObject:
     __slots__ = ['label', 'bbox', 'centroid_i', 'centroid_c', 'color']
 
