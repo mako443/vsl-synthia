@@ -10,6 +10,7 @@ from torch_geometric.data import DataLoader
 from evaluation.evaluation_functions import eval_featureVectors_scoresDict, eval_featureVectors
 from dataloading.data_loading import SynthiaDataset
 from visualgeometric.geometric_embedding import GeometricEmbedding
+from visualgeometric.visual_geometric_embedding import VisualGraphEmbeddingCombined, create_image_model_resnet_18
 
 def gather_GE_vectors(loader, model):
     #Gather all features
@@ -26,6 +27,21 @@ def gather_GE_vectors(loader, model):
     pickle.dump(embed_vectors, open(f'features_GE_e{embed_dim}_d{loader.dataset.scene_name}.pkl','wb'))
     print('Saved GE-vectors')
 
+def gather_VGE_CO_vectors(loader, model, model_name):
+    #Gather all features
+    print('Building VGE-CO vectors:', loader.dataset.scene_name)
+    embed_vectors=torch.tensor([]).cuda()
+    with torch.no_grad():
+        for i_batch, batch in enumerate(loader):
+            images, graphs=batch['images'], batch['graphs']
+            a_out=model(images.to('cuda'), graphs.to('cuda'))
+            embed_vectors=torch.cat((embed_vectors,a_out))   
+    embed_vectors=embed_vectors.cpu().detach().numpy()
+    embed_dim=embed_vectors.shape[1]
+
+    pickle.dump(embed_vectors, open(f'features_VGE-CO_m{model_name}_d{loader.dataset.scene_name}.pkl','wb'))
+    print('Saved VGE-CO-vectors')
+
 if __name__ == "__main__":
     transform=transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),])
 
@@ -38,18 +54,34 @@ if __name__ == "__main__":
 
     if 'gather-summer' in sys.argv:
         BATCH_SIZE=12
-        EMBED_DIM_GEOMETRIC=512
         
-        geometric_embedding=GeometricEmbedding(EMBED_DIM_GEOMETRIC)
-        geometric_embedding_model_name='model_GeometricEmbed_lNone_dSUMMER_b12_g0.75_e512_lTML_m0.5_lr0.0005.pth'
-        geometric_embedding.load_state_dict(torch.load('models/'+geometric_embedding_model_name)); print('Using model:',geometric_embedding_model_name)
-        geometric_embedding.eval(); geometric_embedding.cuda()
+        #GE
+        # EMBED_DIM_GEOMETRIC=512
+        # geometric_embedding=GeometricEmbedding(EMBED_DIM_GEOMETRIC)
+        # geometric_embedding_model_name='model_GeometricEmbed_lNone_dSUMMER_b12_g0.75_e512_lTML_m0.5_lr0.0005.pth'
+        # geometric_embedding.load_state_dict(torch.load('models/'+geometric_embedding_model_name)); print('Using model:',geometric_embedding_model_name)
+        # geometric_embedding.eval(); geometric_embedding.cuda()
+        
+        # loader=DataLoader(data_summer_train, batch_size=BATCH_SIZE, num_workers=2, pin_memory=True, shuffle=False) 
+        # gather_GE_vectors(loader, geometric_embedding)
+
+        # loader=DataLoader(data_summer_test , batch_size=BATCH_SIZE, num_workers=2, pin_memory=True, shuffle=False) 
+        # gather_GE_vectors(loader, geometric_embedding)  
+
+        #VGE-CO
+        EMBED_DIM_GEOMETRIC=1024               
+        resnet=create_image_model_resnet_18()
+        vge_co_model=VisualGraphEmbeddingCombined(resnet, EMBED_DIM_GEOMETRIC)
+        vge_co_model_name='model_VGE-NV-CO_lNone_b12_g0.75_e1024_sTrue_m0.5_dsummer_lr0.0001.pth'
+        vge_co_model.load_state_dict(torch.load('models/'+vge_co_model_name)); print('Model:',vge_co_model_name)
+        vge_co_model.eval()
+        vge_co_model.cuda()
         
         loader=DataLoader(data_summer_train, batch_size=BATCH_SIZE, num_workers=2, pin_memory=True, shuffle=False) 
-        gather_GE_vectors(loader, geometric_embedding)
+        gather_VGE_CO_vectors(loader, vge_co_model, "VGE-CO-summer")
 
-        loader=DataLoader(data_summer_test , batch_size=BATCH_SIZE, num_workers=2, pin_memory=True, shuffle=False) 
-        gather_GE_vectors(loader, geometric_embedding)  
+        loader=DataLoader(data_summer_test , batch_size=BATCH_SIZE, num_workers=2, pin_memory=True, shuffle=False)    
+        gather_VGE_CO_vectors(loader, vge_co_model, "VGE-CO-summer")
 
     if 'GE-match' in sys.argv:
         features_name_db   ='features_GE_e512_dSUMMER-train.pkl'
@@ -57,4 +89,12 @@ if __name__ == "__main__":
         features_db, features_query=pickle.load(open('evaluation_res/'+features_name_db, 'rb')), pickle.load(open('evaluation_res/'+features_name_query, 'rb')); print('features:',features_name_db, features_name_query)
 
         pos_results, ori_results=eval_featureVectors(data_summer_train, data_summer_test, features_db, features_query, similarity='l2')
-        print(pos_results, ori_results,'\n')      
+        print(pos_results, ori_results,'\n') 
+
+    if 'VGE-CO-match' in sys.argv:
+        features_name_db   ='features_VGE-CO_mVGE-CO-summer_dSUMMER-train.pkl'
+        features_name_query='features_VGE-CO_mVGE-CO-summer_dSUMMER-test.pkl'
+        features_db, features_query=pickle.load(open('evaluation_res/'+features_name_db, 'rb')), pickle.load(open('evaluation_res/'+features_name_query, 'rb')); print('features:',features_name_db, features_name_query)
+
+        pos_results, ori_results=eval_featureVectors(data_summer_train, data_summer_test, features_db, features_query, similarity='l2')
+        print(pos_results, ori_results,'\n')         

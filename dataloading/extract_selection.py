@@ -40,7 +40,28 @@ def copy_split(dirpath_in, dirpath_out, offset, step):
                 copyfile( os.path.join(dirpath_in ,target, 'Stereo_Left', omni,name),
                           os.path.join(dirpath_out,target, 'Stereo_Left', omni,name) )  
 
+def remove_split(dirpath, offset, step):
+    assert os.path.isdir( os.path.join(dirpath,'RGB') ) and os.path.isdir( os.path.join(dirpath,'GT/LABELS') ) and os.path.isdir( os.path.join(dirpath,'Depth') ) and os.path.isdir( os.path.join(dirpath,'CameraParams') )
+
+    print(f'removing from {dirpath}, offset {offset} step {step}')
+
+    image_names=sorted(os.listdir( os.path.join(dirpath,'RGB', 'Stereo_Left', 'Omni_F') ))
+
+    for target in ('RGB','GT/LABELS', 'Depth', 'CameraParams'):
+        print(f'target <{target}>')
+        for omni in ('Omni_F', 'Omni_B', 'Omni_R', 'Omni_L'):
+            for name in image_names[offset::step]:
+                if target=='CameraParams': 
+                    name=name.replace('.png','.txt')   
+
+                os.remove( os.path.join(dirpath, target, 'Stereo_Left', omni, name) )
+
 for base_dir in ('data/SYNTHIA-SEQS-04-SUMMER/', 'data/SYNTHIA-SEQS-04-DAWN/', 'data/SYNTHIA-SEQS-04-WINTER/'):
+    dirpath= os.path.join(base_dir,'dense')
+    offset, step=2, 8
+    remove_split(dirpath, offset, step)
+    quit()
+
     dirpath_in = os.path.join(base_dir, 'full')
 
     dirpath_out= os.path.join(base_dir, 'train')
