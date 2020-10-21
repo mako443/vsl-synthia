@@ -9,7 +9,7 @@ from semantic.scenegraphs import score_scenegraph_to_viewobjects
 from dataloading.data_loading import SynthiaDataset
 
 def gather_scoresDict_sceneGraph2ViewObjects(dataset_db, dataset_query):
-    assert len(dataset_db)//2>len(dataset_query)
+    assert len(dataset_db)//1.5>len(dataset_query)
     print(f'Gathering {dataset_query.scene_name} to {dataset_db.scene_name}')
 
     scores_dict={} # Dict { query-idx: { db-index: score} }
@@ -51,6 +51,13 @@ if __name__=='__main__':
 
     if 'Gather-Summer-Summer' in sys.argv:
         gather_scoresDict_sceneGraph2ViewObjects(data_summer_train, data_summer_test) 
+
+    if 'SG2VO' in sys.argv:
+        scores_filename='scores_SG2VO_SUMMER-test-SUMMER-train_rel-corner-5-nn-unused.pkl'
+        scores_dict=pickle.load( open('evaluation_res/'+scores_filename, 'rb')); print('Using scores:',scores_filename)        
+
+        pos_results, ori_results=eval_scoresDict(data_summer_train, data_summer_test, scores_dict)
+        print(pos_results, ori_results,'\n')
 
     if 'netvlad-SG2VO' in sys.argv:
         train_indices,test_indices=get_split_indices(3604,step=8)    

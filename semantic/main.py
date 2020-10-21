@@ -104,9 +104,10 @@ if __name__=='__main__':
             
 
     if 'create-semantic' in sys.argv:
-        for base_dir in ('data/SYNTHIA-SEQS-04-SUMMER/train', 'data/SYNTHIA-SEQS-04-SUMMER/test/', 
+        for base_dir in ('data/SYNTHIA-SEQS-04-SUMMER/train', 'data/SYNTHIA-SEQS-04-SUMMER/test/', 'data/SYNTHIA-SEQS-04-SUMMER/dense', 'data/SYNTHIA-SEQS-04-SUMMER/full/', 
                          'data/SYNTHIA-SEQS-04-DAWN/train', 'data/SYNTHIA-SEQS-04-DAWN/test/', 
                          'data/SYNTHIA-SEQS-04-WINTER/train', 'data/SYNTHIA-SEQS-04-WINTER/test/'):
+        #for base_dir in ('data/SYNTHIA-SEQS-04-SUMMER/dense/',):                         
             file_names=os.listdir( os.path.join(base_dir,'RGB', 'Stereo_Left', DIRECTIONS[0]) )
             print(f'{len(file_names)} positions for {base_dir}...')
 
