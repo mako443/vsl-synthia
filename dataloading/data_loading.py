@@ -13,6 +13,8 @@ from visualgeometric.utils import create_scenegraph_data
 def wrap_angle(angle):
     return (angle + np.pi) % (2 * np.pi) - np.pi
 
+REFERENCE_ROTATION=np.fromstring('-0.00057973 0.00086285 1 0 -0.11839 0.99297 -0.00092542 0 0.99297 0.11839 0.00047349 0 44.388 3.1314 117.55 1', sep=" ").reshape((4,4)).T[0:3,0:3]
+
 class SynthiaDataset(Dataset):
     def __init__(self, dirpath_main,transform=None, return_graph_data=False, load_netvlad_features=False, image_limit=None):
         assert os.path.isdir(dirpath_main)
@@ -35,9 +37,9 @@ class SynthiaDataset(Dataset):
 
         file_names=sorted(os.listdir( os.path.join(dirpath_main,'RGB', 'Stereo_Left', DIRECTIONS[0]) ))
 
-        vo_dict=pickle.load(open( os.path.join(dirpath_main,'view_objects.pkl'),'rb') )
+        #vo_dict=pickle.load(open( os.path.join(dirpath_main,'view_objects.pkl'),'rb') )
         #sg_dict=pickle.load(open( os.path.join(dirpath_main,'scene_graphs.pkl'),'rb') )
-        print('CARE, NOT LOADING SGs')
+        print('CARE, NOT LOADING VO + SGs')
 
         #TODO: assume naive 90 deg. angles, anchored at F (re-varify across turn and cross-scene)
         idx=0
@@ -50,20 +52,23 @@ class SynthiaDataset(Dataset):
                 camera_E=np.fromfile( os.path.join(dirpath_main, 'CameraParams', 'Stereo_Left', direction, file_name.replace('.png','.txt')), sep=" ").reshape((4,4)).T
                 self.image_positions.append(camera_E[0:3,3])
 
-                #Image orientation: extracting from E matrix was incoherent (?), using forward direction as anchor and -90°, +90°, +180° for left, right, backwards respectively
-                camera_E=np.fromfile( os.path.join(dirpath_main, 'CameraParams', 'Stereo_Left', 'Omni_B', file_name.replace('.png','.txt')), sep=" ").reshape((4,4)).T #Load from <Omni_F>
-                orientation=Rotation.from_matrix(camera_E[0:3,0:3]).as_euler('xyz')[0] #TODO: transpose/order correct?
-                
-                self.image_orientations.append(orientation) #TODO: wrap?
-                #if idx in (11,14):
-                #    print(self.image_paths[idx]); print(self.image_positions[idx]); print(self.image_orientations[idx])
+                # #Image orientation: extracting from E matrix was incoherent (?), using forward direction as anchor and -90°, +90°, +180° for left, right, backwards respectively
+                forward_E=np.fromfile( os.path.join(dirpath_main, 'CameraParams', 'Stereo_Left', 'Omni_F', file_name.replace('.png','.txt')), sep=" ").reshape((4,4)).T #loading from <Omni_F>
+
+                rel=REFERENCE_ROTATION @ forward_E[0:3,0:3].T
+                orientation= -1.0 * Rotation.from_matrix(rel).as_euler('xyz')[1] #Positive angle is to the right
 
                 if   direction=='Omni_L': orientation-= np.pi/2
                 elif direction=='Omni_R': orientation+= np.pi/2
                 elif direction=='Omni_B': orientation+= np.pi
 
+                self.image_orientations.append(wrap_angle(orientation)) #TODO: wrap?
+                #if idx in (18,20,18+99, 20+99, 18+2*99, 20+2*99, 18+3*99, 20+3*99):
+                if idx in (11, 14, 11+99, 14+99):
+                    print(self.image_paths[idx]); print(self.image_positions[idx]); print(self.image_orientations[idx]); print('\n')
+
                 #View-Objects and Scene-Graphs
-                self.image_viewobjects.append(vo_dict[direction][file_name])
+                #self.image_viewobjects.append(vo_dict[direction][file_name])
                 #self.image_scenegraphs.append(sg_dict[direction][file_name])
 
                 self.image_omnis.append(direction)
@@ -185,7 +190,3 @@ if __name__=='__main__':
 
     print('max of mins:',np.max(min_dists))
 
--5.5249e-01, -9.9198e-02,  8.2759e-01,  9.9645e+00
-2.9749e-03,  9.9265e-01,  1.2097e-01,  3.1012e+00
-8.3351e-01, -6.9296e-02,  5.4814e-01,  1.1628e+02
-0.0000e+00,  0.0000e+00,  0.0000e+00,  1.0000e+00
