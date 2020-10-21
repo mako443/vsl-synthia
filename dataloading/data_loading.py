@@ -64,8 +64,8 @@ class SynthiaDataset(Dataset):
 
                 self.image_orientations.append(wrap_angle(orientation)) #TODO: wrap?
                 #if idx in (18,20,18+99, 20+99, 18+2*99, 20+2*99, 18+3*99, 20+3*99):
-                if idx in (11, 14, 11+99, 14+99):
-                    print(self.image_paths[idx]); print(self.image_positions[idx]); print(self.image_orientations[idx]); print('\n')
+                # if idx in (0,11, 14, 15, 11+99, 14+99):
+                #     print(self.image_paths[idx]); print(self.image_positions[idx]); print(self.image_orientations[idx]); print('\n')
 
                 #View-Objects and Scene-Graphs
                 #self.image_viewobjects.append(vo_dict[direction][file_name])
@@ -118,29 +118,53 @@ class SynthiaDataset(Dataset):
 
         return image    
 
+#TODO: detect&match Keypoints for more challenging triplets
 class SynthiaDatasetTriplet(SynthiaDataset):
     def __init__(self, dirpath_main, transform=None, return_graph_data=False, load_netvlad_features=False, image_limit=None): 
         super().__init__(dirpath_main, transform=transform, return_graph_data=return_graph_data,load_netvlad_features=load_netvlad_features, image_limit=image_limit)
         #TODO/better: based on location and angle | needs to resolve angle bugs?
         
         #CARE: Thresholds currently in steps between images, calculated from the full dataset -> independent of the split!
-        self.positive_thresh=5 #Maximum of 5 pictures before/after
-        self.negative_thresh=60 #Minimum of 60 pictures before/after
-        self.image_frame_indices=np.array([ int(path.split("/")[-1].split(".")[0]) for path in self.image_paths ])
+        self.positive_thresh=(10, np.pi/3) # AND-combined
+        self.negative_thresh=(50, np.pi*2/3) # OR-combined
+        #self.image_frame_indices=np.array([ int(path.split("/")[-1].split(".")[0]) for path in self.image_paths ])
 
     def __getitem__(self,anchor_index):
-        anchor_frame_index=self.image_frame_indices[anchor_index]
-        anchor_omni=self.image_omnis[anchor_index]
+        #anchor_frame_index=self.image_frame_indices[anchor_index]
+        #anchor_omni=self.image_omnis[anchor_index] #TODO: remove omnis?
 
-        #Positive is from same omni
-        positive_indices= np.argwhere( np.bitwise_and(self.image_omnis==anchor_omni, np.bitwise_and(self.image_frame_indices>anchor_frame_index-self.positive_thresh, self.image_frame_indices<anchor_frame_index+self.positive_thresh)))
-        assert len(positive_indices)>0
-        positive_index=np.random.choice(positive_indices.flatten())
+        pos_dists=np.linalg.norm(self.image_positions[:]-self.image_positions[anchor_index], axis=1)
+        ori_dists=np.abs(self.image_orientations[:]-self.image_orientations[anchor_index])
+        ori_dists=np.minimum(ori_dists, 2*np.pi-ori_dists)     
 
-        #Negative is from same or other omni
-        negative_indices= np.argwhere( np.bitwise_or(self.image_frame_indices>anchor_frame_index+self.negative_thresh, self.image_frame_indices<anchor_frame_index-self.negative_thresh))
-        assert len(negative_indices)>0
-        negative_index=np.random.choice(negative_indices.flatten())    
+        print(anchor_index)
+        pos_dists[anchor_index]=np.inf
+        ori_dists[anchor_index]=np.inf
+        indices= (pos_dists<self.positive_thresh[0]) & (ori_dists<self.positive_thresh[1]) # AND-combine
+        indices=np.argwhere(indices==True).flatten()
+        assert len(indices)>0
+        positive_index=np.random.choice(indices)
+        print(indices)
+        print(self.image_paths[indices])
+
+        pos_dists[anchor_index]=0
+        ori_dists[anchor_index]=0
+        indices= (pos_dists>self.negative_thresh[0]) | (ori_dists>self.negative_thresh[1]) # OR-combine
+        indices=np.argwhere(indices==True).flatten()
+        assert len(indices)>0
+        negative_index=np.random.choice(indices)   
+        #print(indices)
+        print()     
+
+        # #Positive is from same omni
+        # positive_indices= np.argwhere( np.bitwise_and(self.image_omnis==anchor_omni, np.bitwise_and(self.image_frame_indices>anchor_frame_index-self.positive_thresh, self.image_frame_indices<anchor_frame_index+self.positive_thresh)))
+        # assert len(positive_indices)>0
+        # positive_index=np.random.choice(positive_indices.flatten())
+
+        # #Negative is from same or other omni
+        # negative_indices= np.argwhere( np.bitwise_or(self.image_frame_indices>anchor_frame_index+self.negative_thresh, self.image_frame_indices<anchor_frame_index-self.negative_thresh))
+        # assert len(negative_indices)>0
+        # negative_index=np.random.choice(negative_indices.flatten())    
 
         #print('Indices: ', anchor_index, positive_index, negative_index)    
 
@@ -169,7 +193,12 @@ class SynthiaDatasetMultiTriplet(SynthiaDataset):
 
 
 if __name__=='__main__':
-    summer=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/selection', return_graph_data=False)
+    summer=SynthiaDatasetTriplet('data/old/SYNTHIA-SEQS-04-SUMMER/selection', return_graph_data=False)
+    a,p,n=summer[10]
+    a.show()
+    p.show()
+    n.show()
+
     quit()
     idx=11
     print(summer.image_paths[idx]); print(summer.image_positions[idx]); print(summer.image_orientations[idx])
