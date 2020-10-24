@@ -25,7 +25,6 @@ Investigate 898 -> before/after (bigger min-areas?, direction via distance/overl
 Check SG->SG
 '''
 
-#TODO: I need dense db-sets afterall...
 #TODO: Higher rel-count ?! -> No, not really
 #CONTINUE: eval indirect methods (VGE-UE / VGE-NV-CO), if sucessful possibly report retrieval @ K or grid-vote or dense db
 
@@ -33,7 +32,7 @@ data=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/selection/')
 
 #EVAL HAND-PICKED INDICES
 if False:
-    idx0, idx1=298,301
+    idx0, idx1=0,310 # 0-> 6, 10,11, 208, 310
     vo0, vo1= data.image_viewobjects[idx0], data.image_viewobjects[idx1]
     sg0, sgd0= create_scenegraph_from_viewobjects(vo0, return_debug_sg=True)
     sg1, sgd1= create_scenegraph_from_viewobjects(vo1, return_debug_sg=True)
@@ -49,14 +48,16 @@ if False:
 
     cv2.imshow("idx0", rgb0)
     cv2.imshow("idx1", rgb1)
-    cv2.imshow("draw", rbg_draw)
+    cv2.imshow("matching", rbg_draw)
+
+    cv2.imwrite(str(idx1)+'.jpg', np.hstack((rgb0, rgb1, rbg_draw)))
 
     cv2.waitKey()
     quit()
 
 #EVAL HAND-PICKED VS. ALL
-if True:
-    idx=298
+if False:
+    idx=0
     vo= data.image_viewobjects[idx]
     sg, sgd= create_scenegraph_from_viewobjects(vo, return_debug_sg=True)
     scores=np.zeros(len(data))
@@ -134,7 +135,6 @@ if True:
 #     cv2.imshow(str(idx),rgb)
 # cv2.waitKey()
 
-quit()
 '''
 Module to create View-Objects and Scene-Graphs for the data
 '''
@@ -154,13 +154,16 @@ if __name__=='__main__':
         kmeans=KMeans(n_clusters=8).fit(all_colors)
         colors=kmeans.cluster_centers_
         print('Colors:',colors)
-            
 
     if 'create-semantic' in sys.argv:
-        for base_dir in ('data/SYNTHIA-SEQS-04-SUMMER/train', 'data/SYNTHIA-SEQS-04-SUMMER/test/', 'data/SYNTHIA-SEQS-04-SUMMER/dense', 'data/SYNTHIA-SEQS-04-SUMMER/full/', 
-                         'data/SYNTHIA-SEQS-04-DAWN/train', 'data/SYNTHIA-SEQS-04-DAWN/test/', 
-                         'data/SYNTHIA-SEQS-04-WINTER/train', 'data/SYNTHIA-SEQS-04-WINTER/test/'):
-        #for base_dir in ('data/SYNTHIA-SEQS-04-SUMMER/dense/',):                         
+        # for base_dir in ('data/SYNTHIA-SEQS-04-SUMMER/train', 'data/SYNTHIA-SEQS-04-SUMMER/test/', 'data/SYNTHIA-SEQS-04-SUMMER/dense', 'data/SYNTHIA-SEQS-04-SUMMER/full/', 
+        #                  'data/SYNTHIA-SEQS-04-DAWN/train', 'data/SYNTHIA-SEQS-04-DAWN/test/', 
+        #                  'data/SYNTHIA-SEQS-04-WINTER/train', 'data/SYNTHIA-SEQS-04-WINTER/test/'):
+        print('CARE: VO only')
+        for base_dir in ('data/SYNTHIA-SEQS-04-SUMMER/selection',
+                         'data/SYNTHIA-SEQS-04-DAWN/selection',
+                         'data/SYNTHIA-SEQS-04-WINTER/selection',):
+
             file_names=os.listdir( os.path.join(base_dir,'RGB', 'Stereo_Left', DIRECTIONS[0]) )
             print(f'{len(file_names)} positions for {base_dir}...')
 

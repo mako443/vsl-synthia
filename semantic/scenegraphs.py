@@ -42,76 +42,76 @@ def score_relationship_type(sub, rel_type, obj):
 '''
 Strategy: Create a relationship for each object w/ its nearest neighbor (no doublicates)
 '''
-# def create_scenegraph_from_viewobjects(view_objects, return_debug_sg=False):
-#     scene_graph=SceneGraph()
-#     if return_debug_sg: scene_graph_debug=SceneGraph()
-#     blocked_subjects=[]
-
-#     if len(view_objects)<2:
-#         #print('scenegraph_for_view_cluster3d_nnRels(): returning Empty Scene Graph, not enough view objects')
-#         return scene_graph    
-
-#     for sub in view_objects:
-#         if sub in blocked_subjects: continue   
-    
-#         #Find closest object
-#         min_dist=np.inf
-#         min_obj=None
-#         for obj in view_objects:
-#             if sub is obj: continue
-
-#             dist=np.linalg.norm(sub.centroid_c - obj.centroid_c)
-#             if dist<min_dist:
-#                 min_dist=dist
-#                 min_obj=obj    
-
-#         obj=min_obj
-#         assert obj is not None
-#         rel_type=get_relationship_type(sub, obj)    
-
-#         blocked_subjects.append(obj) #No doublicate relations, CARE: do before flip
-
-#         scene_graph.add_relationship( SceneGraphObject.from_viewobject(sub), rel_type,  SceneGraphObject.from_viewobject(obj) )        
-#         if return_debug_sg: scene_graph_debug.add_relationship( sub, rel_type, obj )   
-
-#     if return_debug_sg: return scene_graph, scene_graph_debug
-#     else: return scene_graph
-
 def create_scenegraph_from_viewobjects(view_objects, return_debug_sg=False):
     scene_graph=SceneGraph()
     if return_debug_sg: scene_graph_debug=SceneGraph()
-    #blocked_subjects=[]
-    blocked_pairs=[]
+    blocked_subjects=[]
 
     if len(view_objects)<2:
         #print('scenegraph_for_view_cluster3d_nnRels(): returning Empty Scene Graph, not enough view objects')
         return scene_graph    
 
     for sub in view_objects:
-        #if sub in blocked_subjects: continue   
+        if sub in blocked_subjects: continue   
     
         #Find closest object
-        sub_dists= np.array([ np.linalg.norm(sub.centroid_c - v.centroid_c) for v in view_objects if v!=sub ])
-        obj_candidates= np.array([ v for v in view_objects if v!=sub ])
-        sorted_indices=np.argsort(sub_dists)
+        min_dist=np.inf
+        min_obj=None
+        for obj in view_objects:
+            if sub is obj: continue
 
-        #Pick the two closest objects
-        for obj in obj_candidates[sorted_indices[0:1]]:
-            #check the inverse rel. doesn't exists yet
-            if (sub, obj) in blocked_pairs or (obj,sub) in blocked_pairs:
-                continue
+            dist=np.linalg.norm(sub.centroid_c - obj.centroid_c)
+            if dist<min_dist:
+                min_dist=dist
+                min_obj=obj    
 
-            assert obj is not None
-            rel_type=get_relationship_type(sub, obj)    
+        obj=min_obj
+        assert obj is not None
+        rel_type=get_relationship_type(sub, obj)    
 
-            #blocked_subjects.append(obj) #No doublicate relations, CARE: do before flip
-            blocked_pairs.append( (sub,obj) )
+        blocked_subjects.append(obj) #No doublicate relations, CARE: do before flip
 
-            scene_graph.add_relationship( SceneGraphObject.from_viewobject(sub), rel_type,  SceneGraphObject.from_viewobject(obj) )        
-            if return_debug_sg: scene_graph_debug.add_relationship( sub, rel_type, obj )   
+        scene_graph.add_relationship( SceneGraphObject.from_viewobject(sub), rel_type,  SceneGraphObject.from_viewobject(obj) )        
+        if return_debug_sg: scene_graph_debug.add_relationship( sub, rel_type, obj )   
 
     if return_debug_sg: return scene_graph, scene_graph_debug
     else: return scene_graph
+
+# def create_scenegraph_from_viewobjects(view_objects, return_debug_sg=False):
+#     scene_graph=SceneGraph()
+#     if return_debug_sg: scene_graph_debug=SceneGraph()
+#     #blocked_subjects=[]
+#     blocked_pairs=[]
+
+#     if len(view_objects)<2:
+#         #print('scenegraph_for_view_cluster3d_nnRels(): returning Empty Scene Graph, not enough view objects')
+#         return scene_graph    
+
+#     for sub in view_objects:
+#         #if sub in blocked_subjects: continue   
+    
+#         #Find closest object
+#         sub_dists= np.array([ np.linalg.norm(sub.centroid_c - v.centroid_c) for v in view_objects if v!=sub ])
+#         obj_candidates= np.array([ v for v in view_objects if v!=sub ])
+#         sorted_indices=np.argsort(sub_dists)
+
+#         #Pick the two closest objects
+#         for obj in obj_candidates[sorted_indices[0:1]]:
+#             #check the inverse rel. doesn't exists yet
+#             if (sub, obj) in blocked_pairs or (obj,sub) in blocked_pairs:
+#                 continue
+
+#             assert obj is not None
+#             rel_type=get_relationship_type(sub, obj)    
+
+#             #blocked_subjects.append(obj) #No doublicate relations, CARE: do before flip
+#             blocked_pairs.append( (sub,obj) )
+
+#             scene_graph.add_relationship( SceneGraphObject.from_viewobject(sub), rel_type,  SceneGraphObject.from_viewobject(obj) )        
+#             if return_debug_sg: scene_graph_debug.add_relationship( sub, rel_type, obj )   
+
+#     if return_debug_sg: return scene_graph, scene_graph_debug
+#     else: return scene_graph
 
 def score_scenegraph_to_viewobjects(scene_graph, view_objects, unused_factor=0.5, verbose=False):
     MIN_SCORE=0.01 #OPTION: hardest penalty for relationship not found | TODO: re-adjust based on best metric combination

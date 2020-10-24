@@ -37,9 +37,9 @@ class SynthiaDataset(Dataset):
 
         file_names=sorted(os.listdir( os.path.join(dirpath_main,'RGB', 'Stereo_Left', DIRECTIONS[0]) ))
 
-        #vo_dict=pickle.load(open( os.path.join(dirpath_main,'view_objects.pkl'),'rb') )
+        vo_dict=pickle.load(open( os.path.join(dirpath_main,'view_objects.pkl'),'rb') )
         #sg_dict=pickle.load(open( os.path.join(dirpath_main,'scene_graphs.pkl'),'rb') )
-        print('CARE, NOT LOADING VO + SGs')
+        print('CARE, NOT LOADING SGs')
 
         #TODO: assume naive 90 deg. angles, anchored at F (re-varify across turn and cross-scene)
         idx=0
@@ -68,7 +68,7 @@ class SynthiaDataset(Dataset):
                 #     print(self.image_paths[idx]); print(self.image_positions[idx]); print(self.image_orientations[idx]); print('\n')
 
                 #View-Objects and Scene-Graphs
-                #self.image_viewobjects.append(vo_dict[direction][file_name])
+                self.image_viewobjects.append(vo_dict[direction][file_name])
                 #self.image_scenegraphs.append(sg_dict[direction][file_name])
 
                 self.image_omnis.append(direction)

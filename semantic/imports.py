@@ -67,8 +67,8 @@ class ViewObject:
     def draw_on_image(self,img):
         color=CLASS_COLORS[self.label]
         color=(color[2],color[1],color[0])
-        cv2.rectangle(img, (int(self.bbox[0]), int(self.bbox[1])), (int(self.bbox[3]), int(self.bbox[4])), color, thickness=3)
-        cv2.circle(img, (int(self.centroid_i[0]),int(self.centroid_i[1])), 7, color, -1 )
+        cv2.rectangle(img, (int(self.bbox[0]), int(self.bbox[1])), (int(self.bbox[3]), int(self.bbox[4])), color, thickness=5)
+        cv2.circle(img, (int(self.centroid_i[0]),int(self.centroid_i[1])), 9, color, -1 )
 
     def __str__(self):
         return f'{self.label} at {self.centroid_i} color {self.color}'
@@ -82,7 +82,7 @@ def draw_scenegraph_on_image(img, scene_graph_or_relationships):
             p.draw_on_image(img)
 
         p0,p1= (int(rel[0].centroid_i[0]), int(rel[0].centroid_i[1])), (int(rel[2].centroid_i[0]), int(rel[2].centroid_i[1]))
-        cv2.arrowedLine(img, (p0[0],p0[1]), (p1[0],p1[1]), (0,0,255), thickness=3)
+        cv2.arrowedLine(img, (p0[0],p0[1]), (p1[0],p1[1]), (0,0,255), thickness=4)
         cv2.putText(img,rel[1]+" of",(p0[0],p0[1]),cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0,0,255), thickness=2)    
 
 class SceneGraph:
