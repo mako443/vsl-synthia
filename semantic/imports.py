@@ -56,6 +56,7 @@ IMAGE_WIDTH, IMAGE_HEIGHT= 1280,760
 
 class ViewObject:
     __slots__ = ['label', 'bbox', 'centroid_i', 'centroid_c', 'color']
+    BG_DIST_THRESH=15
 
     def __init__(self, label, bbox, centroid_i, centroid_c, color):
         self.label=label
@@ -71,7 +72,7 @@ class ViewObject:
         cv2.circle(img, (int(self.centroid_i[0]),int(self.centroid_i[1])), 9, color, -1 )
 
     def __str__(self):
-        return f'{self.label} at {self.centroid_i} color {self.color}'
+        return f'{self.label} at {self.centroid_i} color {self.color} dist {self.centroid_c[2]}'
 
 def draw_scenegraph_on_image(img, scene_graph_or_relationships):
     relationships = scene_graph_or_relationships if type(scene_graph_or_relationships) is list else scene_graph_or_relationships.relationships
@@ -146,6 +147,34 @@ class SceneGraphObject:
 
     def get_text(self):
         return str(self)     
+
+###
+# New strategy: object descriptions
+###
+#TODO: evaluate Small&Big objects (small: closest corner, big: touching corner)
+class DescriptionObject:
+    __slots__= ['label','color', 'corner','distance']
+
+    @classmethod
+    def from_viewobject(cls, v):
+        do=DescriptionObject()
+        do.label=v.label
+
+        corner_distances= np.linalg.norm( CORNERS - (v.centroid_i[0:2]/(IMAGE_WIDTH,IMAGE_HEIGHT)), axis=1)
+        do.corner= CORNER_NAMES[np.argmin(corner_distances)]
+
+        color_distances= np.linalg.norm( COLORS-v.color, axis=1 )
+        do.color=COLOR_NAMES[ np.argmin(color_distances) ]
+
+        do.distance= 'foreground' if v.centroid_c[2]<ViewObject.BG_DIST_THRESH else 'background'
+
+        return do   
+
+    def __str__(self):
+        return f'{self.color} {self.label} at {self.corner} {self.distance}'
+
+    def get_text(self):
+        return str(self)                 
 
 if __name__=='__main__':
     point_c=np.array((0,0,2),dtype=np.float32)

@@ -7,10 +7,11 @@ import sys
 from sklearn.cluster import KMeans
 
 from semantic.imports import CLASS_IDS, CLASS_COLORS, RELATIONSHIP_TYPES, DIRECTIONS, CORNERS, CORNER_NAMES, IMAGE_WIDTH, IMAGE_HEIGHT
-from semantic.imports import ViewObject, SceneGraph, SceneGraphObject, draw_scenegraph_on_image
+from semantic.imports import ViewObject, SceneGraph, SceneGraphObject, draw_scenegraph_on_image, DescriptionObject
 
 from semantic.viewobjects import create_view_objects
 from semantic.scenegraphs import create_scenegraph_from_viewobjects, score_scenegraph_to_viewobjects
+from semantic.scenegraphs2 import score_description_to_viewobjects
 from dataloading.data_loading import SynthiaDataset
 
 '''
@@ -30,46 +31,71 @@ Check SG->SG
 
 data=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/selection/')
 
+#CHECK DO CREATION
+if False:
+    idx=12
+    all_vo = data.image_viewobjects[idx]
+    all_do = [DescriptionObject.from_viewobject(vo) for vo in all_vo]
+
+    rgb= cv2.imread(data.image_paths[idx])
+    for vo in all_vo:
+        vo.draw_on_image(rgb)
+        #print(vo)
+
+    #for do in all_do:
+    #   print(do)
+
+    score=score_description_to_viewobjects(all_do, all_vo, (1,1,1,1,-1), verbose=True )
+    print('score',score)
+
+    cv2.imshow("",rgb)
+    cv2.waitKey()
+
 #EVAL HAND-PICKED INDICES
 if False:
-    idx0, idx1=0,310 # 0-> 6, 10,11, 208, 310
+    idx0, idx1=0,4
     vo0, vo1= data.image_viewobjects[idx0], data.image_viewobjects[idx1]
-    sg0, sgd0= create_scenegraph_from_viewobjects(vo0, return_debug_sg=True)
-    sg1, sgd1= create_scenegraph_from_viewobjects(vo1, return_debug_sg=True)
+    do0= [DescriptionObject.from_viewobject(vo) for vo in vo0]
+    do1= [DescriptionObject.from_viewobject(vo) for vo in vo1]
+    # for do in do0:
+    #     print(do)
+    # print('--')
+    # for do in do1:
+    #     print(do)    
+    # print('--')        
 
     rgb0, rgb1= cv2.imread(data.image_paths[idx0]), cv2.imread(data.image_paths[idx1])
-    rbg_draw=rgb1.copy()
-    sgd0.draw_on_image(rgb0)
-    sgd1.draw_on_image(rgb1)
+    for v in vo0: v.draw_on_image(rgb0)
+    for v in vo1: v.draw_on_image(rgb1)
 
-    score, groundings=score_scenegraph_to_viewobjects(sg0, vo1, unused_factor=0.5)
+    score=score_description_to_viewobjects(do0, vo1, (1,1,1,1,-1), verbose=True )
     print('score:', score)
-    draw_scenegraph_on_image(rbg_draw, groundings)
-
+    
     cv2.imshow("idx0", rgb0)
     cv2.imshow("idx1", rgb1)
-    cv2.imshow("matching", rbg_draw)
-
-    cv2.imwrite(str(idx1)+'.jpg', np.hstack((rgb0, rgb1, rbg_draw)))
 
     cv2.waitKey()
-    quit()
 
 #EVAL HAND-PICKED VS. ALL
-if False:
+#(1,1,1.5,1,0) 
+#(2,2,2,1,0)
+#(1,1,1,1,-0.25)
+#(1,0,1,1,-0.25)
+if True:
     idx=0
-    vo= data.image_viewobjects[idx]
-    sg, sgd= create_scenegraph_from_viewobjects(vo, return_debug_sg=True)
+    all_vo= data.image_viewobjects[idx]
+    all_do = [DescriptionObject.from_viewobject(vo) for vo in all_vo]
+    
     scores=np.zeros(len(data))
     for test_index in range(len(data)):
-        score,_= score_scenegraph_to_viewobjects(sg, data.image_viewobjects[test_index], unused_factor=0.5)
+        score= score_description_to_viewobjects(all_do, data.image_viewobjects[test_index], (1,0,1,1,-0.25) )
         scores[test_index]=score
 
     sorted_indices=np.argsort( -1.0*scores)
     print('sorted indices', sorted_indices[0:10])
-    print('scores', scores[0:10])
-    quit()
+    print('scores', np.float16(scores[0:10]))
 
+quit()
 # data_winter=SynthiaDataset('data/SYNTHIA-SEQS-04-WINTER/selection/')
 # data_dawn=SynthiaDataset('data/SYNTHIA-SEQS-04-DAWN/selection/')
 
