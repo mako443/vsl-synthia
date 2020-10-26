@@ -20,7 +20,7 @@ from visualgeometric.visual_geometric_embedding import create_image_model_resnet
 
 print('Device:',torch.cuda.get_device_name())
 
-IMAGE_LIMIT=256
+IMAGE_LIMIT=None
 BATCH_SIZE=12 #12 gives memory error, 8 had more loss than 6?
 LR_GAMMA=0.75
 #EMBED_DIM=1024
@@ -42,8 +42,8 @@ loss_dict={}
 best_loss=np.inf
 best_model=None
 
-for lr in (5e-4,1e-4,5e-5):
-#for lr in (LR,):
+#for lr in (4e-2,2e-2,1e-2):
+for lr in (LR,):
     print('\n\nlr: ',lr)
 
     resnet=create_image_model_resnet_18()
@@ -51,11 +51,11 @@ for lr in (5e-4,1e-4,5e-5):
 
     criterion=nn.TripletMarginLoss(margin=MARGIN)
 
-    optimizer=optim.Adam(model.parameters(), lr=lr) #Adam is ok for PyG
+    optimizer=optim.Adam(model.parameters(), lr=lr)
     scheduler=optim.lr_scheduler.ExponentialLR(optimizer,LR_GAMMA)   
 
     loss_dict[lr]=[]
-    for epoch in range(6):
+    for epoch in range(10):
         epoch_loss_sum=0.0
         for i_batch, batch in enumerate(data_loader):
             

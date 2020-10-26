@@ -10,7 +10,8 @@ from torch_geometric.data import DataLoader
 from evaluation.evaluation_functions import eval_featureVectors_scoresDict, eval_featureVectors
 from dataloading.data_loading import SynthiaDataset
 from visualgeometric.geometric_embedding import GeometricEmbedding
-from visualgeometric.visual_geometric_embedding import VisualGraphEmbeddingCombined, create_image_model_resnet_18
+from retrieval.netvlad import NetvladModel
+from visualgeometric.visual_geometric_embedding import VisualGraphEmbeddingCombined, VisualGraphEmbeddingCombinedPT, create_image_model_resnet_18
 
 def gather_GE_vectors(loader, model):
     #Gather all features
@@ -27,19 +28,33 @@ def gather_GE_vectors(loader, model):
     pickle.dump(embed_vectors, open(f'features_GE_e{embed_dim}_d{loader.dataset.scene_name}.pkl','wb'))
     print('Saved GE-vectors')
 
-def gather_VGE_CO_vectors(loader, model, model_name):
+def randomize_graphs(graph_batch):
+    t=graph_batch.x.dtype
+    graph_batch.x=torch.randint_like(graph_batch.x.type(torch.float), low=0, high=20).type(t)
+
+    t=graph_batch.edge_attr.dtype
+    graph_batch.edge_attr=torch.randint_like(graph_batch.edge_attr, low=0, high=4).type(t)
+
+    edge_index_clone=graph_batch.edge_index.clone().detach()
+    graph_batch.edge_index[0,:]=edge_index_clone[1,:]
+    graph_batch.edge_index[1,:]=edge_index_clone[0,:]    
+    return graph_batch
+
+def gather_VGE_CO_vectors(loader, model, model_name, use_random_graphs=False):
     #Gather all features
     print('Building VGE-CO vectors:', loader.dataset.scene_name)
     embed_vectors=torch.tensor([]).cuda()
     with torch.no_grad():
         for i_batch, batch in enumerate(loader):
             images, graphs=batch['images'], batch['graphs']
+            if use_random_graphs: 
+                graphs=randomize_graphs(graphs)            
             a_out=model(images.to('cuda'), graphs.to('cuda'))
             embed_vectors=torch.cat((embed_vectors,a_out))   
     embed_vectors=embed_vectors.cpu().detach().numpy()
     embed_dim=embed_vectors.shape[1]
 
-    pickle.dump(embed_vectors, open(f'features_VGE-CO_m{model_name}_d{loader.dataset.scene_name}.pkl','wb'))
+    pickle.dump(embed_vectors, open(f'features_VGE-CO_m{model_name}_d{loader.dataset.scene_name}_rg{use_random_graphs}.pkl','wb'))
     print('Saved VGE-CO-vectors')
 
 if __name__ == "__main__":
@@ -47,11 +62,13 @@ if __name__ == "__main__":
 
     data_summer_train=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/train', transform=transform, return_graph_data=True)
     data_summer_test =SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/test', transform=transform, return_graph_data=True)
+    data_summer_dense =SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/dense', transform=transform, return_graph_data=True)
     data_dawn_train=  SynthiaDataset('data/SYNTHIA-SEQS-04-DAWN/train', transform=transform, return_graph_data=True)
     data_dawn_test =  SynthiaDataset('data/SYNTHIA-SEQS-04-DAWN/test', transform=transform, return_graph_data=True)
     data_winter_train=SynthiaDataset('data/SYNTHIA-SEQS-04-WINTER/train', transform=transform, return_graph_data=True)
     data_winter_test =SynthiaDataset('data/SYNTHIA-SEQS-04-WINTER/test', transform=transform, return_graph_data=True)
 
+    #TODO: sort by model
     if 'gather-summer' in sys.argv:
         BATCH_SIZE=12
         
@@ -68,22 +85,47 @@ if __name__ == "__main__":
         # loader=DataLoader(data_summer_test , batch_size=BATCH_SIZE, num_workers=2, pin_memory=True, shuffle=False) 
         # gather_GE_vectors(loader, geometric_embedding)  
 
-        #VGE-CO
+        # #VGE-CO
+        # EMBED_DIM_GEOMETRIC=1024               
+        # resnet=create_image_model_resnet_18()
+        # vge_co_model=VisualGraphEmbeddingCombined(resnet, EMBED_DIM_GEOMETRIC)
+        # vge_co_model_name='model_VGE-NV-CO_lNone_b12_g0.75_e1024_sTrue_m0.5_dsummer_lr0.01.pth'
+        # vge_co_model.load_state_dict(torch.load('models/'+vge_co_model_name)); print('Model:',vge_co_model_name)
+        # vge_co_model.eval()
+        # vge_co_model.cuda()
+        
+        # loader=DataLoader(data_summer_train, batch_size=BATCH_SIZE, num_workers=2, pin_memory=True, shuffle=False) 
+        # gather_VGE_CO_vectors(loader, vge_co_model, "VGE-NV-CO-summer")
+
+        # loader=DataLoader(data_summer_test , batch_size=BATCH_SIZE, num_workers=2, pin_memory=True, shuffle=False)    
+        # gather_VGE_CO_vectors(loader, vge_co_model, "VGE-NV-CO-summer")
+
+        # loader=DataLoader(data_summer_dense , batch_size=BATCH_SIZE, num_workers=2, pin_memory=True, shuffle=False)    
+        # gather_VGE_CO_vectors(loader, vge_co_model, "VGE-NV-CO-summer")  
+
+        #VGE-CO-PT
         EMBED_DIM_GEOMETRIC=1024               
         resnet=create_image_model_resnet_18()
-        vge_co_model=VisualGraphEmbeddingCombined(resnet, EMBED_DIM_GEOMETRIC)
-        vge_co_model_name='model_VGE-NV-CO_lNone_b12_g0.75_e1024_sTrue_m0.5_dsummer_lr0.0001.pth'
-        vge_co_model.load_state_dict(torch.load('models/'+vge_co_model_name)); print('Model:',vge_co_model_name)
-        vge_co_model.eval()
-        vge_co_model.cuda()
+        netvlad_model=NetvladModel(resnet)
+        netvlad_model_name='model_NV-SYN_lNone_b12_g0.75_sTrue_m0.5_dsummer_lr0.02.pth'
+        netvlad_model.load_state_dict(torch.load('models/'+netvlad_model_name)); print('Model:',netvlad_model_name)
+        
+        vge_co_model_pt=VisualGraphEmbeddingCombinedPT(netvlad_model, EMBED_DIM_GEOMETRIC).cuda()
+        vge_co_model_pt_name='model_VGE-NV-CO-PT_lNone_b12_g0.75_e1024_sTrue_m0.5_dsummer_lr0.002.pth'
+        vge_co_model_pt.load_state_dict(torch.load('models/'+vge_co_model_pt_name)); print('Model:',vge_co_model_pt_name)
+        vge_co_model_pt.eval()
+        vge_co_model_pt.cuda()
         
         loader=DataLoader(data_summer_train, batch_size=BATCH_SIZE, num_workers=2, pin_memory=True, shuffle=False) 
-        gather_VGE_CO_vectors(loader, vge_co_model, "VGE-CO-summer")
+        gather_VGE_CO_vectors(loader, vge_co_model_pt, "VGE-NV-CO-PT-summer", use_random_graphs=True)
 
         loader=DataLoader(data_summer_test , batch_size=BATCH_SIZE, num_workers=2, pin_memory=True, shuffle=False)    
-        gather_VGE_CO_vectors(loader, vge_co_model, "VGE-CO-summer")
+        gather_VGE_CO_vectors(loader, vge_co_model_pt, "VGE-NV-CO-PT-summer", use_random_graphs=True)
 
-    if 'GE-match' in sys.argv:
+        loader=DataLoader(data_summer_dense , batch_size=BATCH_SIZE, num_workers=2, pin_memory=True, shuffle=False)    
+        gather_VGE_CO_vectors(loader, vge_co_model_pt, "VGE-NV-CO-PT-summer", use_random_graphs=True)                
+
+    if 'eval-GE' in sys.argv:
         features_name_db   ='features_GE_e512_dSUMMER-train.pkl'
         features_name_query='features_GE_e512_dSUMMER-test.pkl'
         features_db, features_query=pickle.load(open('evaluation_res/'+features_name_db, 'rb')), pickle.load(open('evaluation_res/'+features_name_query, 'rb')); print('features:',features_name_db, features_name_query)
@@ -91,10 +133,48 @@ if __name__ == "__main__":
         pos_results, ori_results=eval_featureVectors(data_summer_train, data_summer_test, features_db, features_query, similarity='l2')
         print(pos_results, ori_results,'\n') 
 
-    if 'VGE-CO-match' in sys.argv:
-        features_name_db   ='features_VGE-CO_mVGE-CO-summer_dSUMMER-train.pkl'
-        features_name_query='features_VGE-CO_mVGE-CO-summer_dSUMMER-test.pkl'
+    if 'eval-VGE-CO' in sys.argv:
+        features_name_db   ='features_VGE-CO_mVGE-NV-CO-summer_dSUMMER-train.pkl'
+        features_name_query='features_VGE-CO_mVGE-NV-CO-summer_dSUMMER-test.pkl'
         features_db, features_query=pickle.load(open('evaluation_res/'+features_name_db, 'rb')), pickle.load(open('evaluation_res/'+features_name_query, 'rb')); print('features:',features_name_db, features_name_query)
 
         pos_results, ori_results=eval_featureVectors(data_summer_train, data_summer_test, features_db, features_query, similarity='l2')
-        print(pos_results, ori_results,'\n')         
+        print(pos_results, ori_results,'\n')       
+
+        features_name_db   ='features_VGE-CO_mVGE-NV-CO-summer_dSUMMER-dense.pkl'
+        features_name_query='features_VGE-CO_mVGE-NV-CO-summer_dSUMMER-test.pkl'
+        features_db, features_query=pickle.load(open('evaluation_res/'+features_name_db, 'rb')), pickle.load(open('evaluation_res/'+features_name_query, 'rb')); print('features:',features_name_db, features_name_query)
+
+        pos_results, ori_results=eval_featureVectors(data_summer_dense, data_summer_test, features_db, features_query, similarity='l2')
+        print(pos_results, ori_results,'\n')   
+
+    if 'eval-VGE-CO-PT' in sys.argv:
+        features_name_db   ='features_VGE-CO_mVGE-NV-CO-PT-summer_dSUMMER-train_rgFalse.pkl'
+        features_name_query='features_VGE-CO_mVGE-NV-CO-PT-summer_dSUMMER-test_rgFalse.pkl'
+        features_db, features_query=pickle.load(open('evaluation_res/'+features_name_db, 'rb')), pickle.load(open('evaluation_res/'+features_name_query, 'rb')); print('features:',features_name_db, features_name_query)
+
+        pos_results, ori_results=eval_featureVectors(data_summer_train, data_summer_test, features_db, features_query, similarity='l2')
+        print(pos_results, ori_results,'\n')       
+
+        features_name_db   ='features_VGE-CO_mVGE-NV-CO-PT-summer_dSUMMER-dense_rgFalse.pkl'
+        features_name_query='features_VGE-CO_mVGE-NV-CO-PT-summer_dSUMMER-test_rgFalse.pkl'
+        features_db, features_query=pickle.load(open('evaluation_res/'+features_name_db, 'rb')), pickle.load(open('evaluation_res/'+features_name_query, 'rb')); print('features:',features_name_db, features_name_query)
+
+        pos_results, ori_results=eval_featureVectors(data_summer_dense, data_summer_test, features_db, features_query, similarity='l2')
+        print(pos_results, ori_results,'\n')    
+
+        print('\n --- ablation study --- \n')
+
+        features_name_db   ='features_VGE-CO_mVGE-NV-CO-PT-summer_dSUMMER-train_rgTrue.pkl'
+        features_name_query='features_VGE-CO_mVGE-NV-CO-PT-summer_dSUMMER-test_rgTrue.pkl'
+        features_db, features_query=pickle.load(open('evaluation_res/'+features_name_db, 'rb')), pickle.load(open('evaluation_res/'+features_name_query, 'rb')); print('features:',features_name_db, features_name_query)
+
+        pos_results, ori_results=eval_featureVectors(data_summer_train, data_summer_test, features_db, features_query, similarity='l2')
+        print(pos_results, ori_results,'\n')       
+
+        features_name_db   ='features_VGE-CO_mVGE-NV-CO-PT-summer_dSUMMER-dense_rgTrue.pkl'
+        features_name_query='features_VGE-CO_mVGE-NV-CO-PT-summer_dSUMMER-test_rgTrue.pkl'
+        features_db, features_query=pickle.load(open('evaluation_res/'+features_name_db, 'rb')), pickle.load(open('evaluation_res/'+features_name_query, 'rb')); print('features:',features_name_db, features_name_query)
+
+        pos_results, ori_results=eval_featureVectors(data_summer_dense, data_summer_test, features_db, features_query, similarity='l2')
+        print(pos_results, ori_results,'\n')                          

@@ -13,6 +13,7 @@ from visualgeometric.utils import create_scenegraph_data
 def wrap_angle(angle):
     return (angle + np.pi) % (2 * np.pi) - np.pi
 
+#Using image 0 from summer as reference
 REFERENCE_ROTATION=np.fromstring('-0.00057973 0.00086285 1 0 -0.11839 0.99297 -0.00092542 0 0.99297 0.11839 0.00047349 0 44.388 3.1314 117.55 1', sep=" ").reshape((4,4)).T[0:3,0:3]
 
 class SynthiaDataset(Dataset):
@@ -37,9 +38,8 @@ class SynthiaDataset(Dataset):
 
         file_names=sorted(os.listdir( os.path.join(dirpath_main,'RGB', 'Stereo_Left', DIRECTIONS[0]) ))
 
-        #vo_dict=pickle.load(open( os.path.join(dirpath_main,'view_objects.pkl'),'rb') )
-        #sg_dict=pickle.load(open( os.path.join(dirpath_main,'scene_graphs.pkl'),'rb') )
-        print('CARE, NOT LOADING VO + SGs')
+        vo_dict=pickle.load(open( os.path.join(dirpath_main,'view_objects.pkl'),'rb') )
+        sg_dict=pickle.load(open( os.path.join(dirpath_main,'scene_graphs.pkl'),'rb') )
 
         #TODO: assume naive 90 deg. angles, anchored at F (re-varify across turn and cross-scene)
         idx=0
@@ -68,8 +68,8 @@ class SynthiaDataset(Dataset):
                 #     print(self.image_paths[idx]); print(self.image_positions[idx]); print(self.image_orientations[idx]); print('\n')
 
                 #View-Objects and Scene-Graphs
-                #self.image_viewobjects.append(vo_dict[direction][file_name])
-                #self.image_scenegraphs.append(sg_dict[direction][file_name])
+                self.image_viewobjects.append(vo_dict[direction][file_name])
+                self.image_scenegraphs.append(sg_dict[direction][file_name])
 
                 self.image_omnis.append(direction)
 
@@ -82,7 +82,7 @@ class SynthiaDataset(Dataset):
         self.image_viewobjects=np.array(self.image_viewobjects, dtype=np.object)
         self.image_scenegraphs=np.array(self.image_scenegraphs, dtype=np.object)
 
-        #assert len(self.image_paths)==len(self.image_positions)==len(self.image_omnis)==len(self.image_orientations)==len(self.image_viewobjects)==len(self.image_scenegraphs)
+        assert len(self.image_paths)==len(self.image_positions)==len(self.image_omnis)==len(self.image_orientations)==len(self.image_viewobjects)==len(self.image_scenegraphs)
 
         if load_netvlad_features:
             assert os.path.isfile( os.path.join(dirpath_main,'netvlad_features.pkl') )
@@ -125,7 +125,7 @@ class SynthiaDatasetTriplet(SynthiaDataset):
         #TODO/better: based on location and angle | needs to resolve angle bugs?
         
         #CARE: Thresholds currently in steps between images, calculated from the full dataset -> independent of the split!
-        self.positive_thresh=(10, np.pi/3) # AND-combined
+        self.positive_thresh=(7.5, np.pi/3) # AND-combined
         self.negative_thresh=(50, np.pi*2/3) # OR-combined
         #self.image_frame_indices=np.array([ int(path.split("/")[-1].split(".")[0]) for path in self.image_paths ])
 
@@ -137,24 +137,22 @@ class SynthiaDatasetTriplet(SynthiaDataset):
         ori_dists=np.abs(self.image_orientations[:]-self.image_orientations[anchor_index])
         ori_dists=np.minimum(ori_dists, 2*np.pi-ori_dists)     
 
-        print(anchor_index)
+        # print(anchor_index)
         pos_dists[anchor_index]=np.inf
         ori_dists[anchor_index]=np.inf
         indices= (pos_dists<self.positive_thresh[0]) & (ori_dists<self.positive_thresh[1]) # AND-combine
         indices=np.argwhere(indices==True).flatten()
         assert len(indices)>0
         positive_index=np.random.choice(indices)
-        print(indices)
-        print(self.image_paths[indices])
+        # print(indices)
+        # print(self.image_paths[indices])
 
         pos_dists[anchor_index]=0
         ori_dists[anchor_index]=0
         indices= (pos_dists>self.negative_thresh[0]) | (ori_dists>self.negative_thresh[1]) # OR-combine
         indices=np.argwhere(indices==True).flatten()
         assert len(indices)>0
-        negative_index=np.random.choice(indices)   
-        #print(indices)
-        print()     
+        negative_index=np.random.choice(indices)    
 
         # #Positive is from same omni
         # positive_indices= np.argwhere( np.bitwise_and(self.image_omnis==anchor_omni, np.bitwise_and(self.image_frame_indices>anchor_frame_index-self.positive_thresh, self.image_frame_indices<anchor_frame_index+self.positive_thresh)))
@@ -193,8 +191,8 @@ class SynthiaDatasetMultiTriplet(SynthiaDataset):
 
 
 if __name__=='__main__':
-    summer=SynthiaDatasetTriplet('data/old/SYNTHIA-SEQS-04-SUMMER/selection', return_graph_data=False)
-    a,p,n=summer[10]
+    summer=SynthiaDatasetTriplet('data/SYNTHIA-SEQS-04-SUMMER/dense', return_graph_data=False)
+    a,p,n=summer[25]
     a.show()
     p.show()
     n.show()
