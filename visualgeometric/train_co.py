@@ -15,7 +15,8 @@ import sys
 from torch_geometric.data import DataLoader #Use the PyG DataLoader
 
 from dataloading.data_loading import SynthiaDataset,SynthiaDatasetTriplet
-from visualgeometric.visual_geometric_embedding import VisualGraphEmbeddingCombined, create_image_model_resnet_18
+from retrieval.netvlad import NetvladModel
+from visualgeometric.visual_geometric_embedding import VisualGraphEmbeddingCombined, VisualGraphEmbeddingCombinedPT, create_image_model_resnet_18
 
 print('Device:',torch.cuda.get_device_name())
 
@@ -30,7 +31,7 @@ DATASET='summer'
 #CAPTURE arg values
 LR=float(sys.argv[-1])
 
-print(f'VGE-NV-CO training: image limit: {IMAGE_LIMIT} bs: {BATCH_SIZE} lr gamma: {LR_GAMMA} embed-dim: {EMBED_DIM} shuffle: {SHUFFLE} margin: {MARGIN} dataset: {DATASET} lr: {LR}')
+print(f'VGE-NV-CO-PT training: image limit: {IMAGE_LIMIT} bs: {BATCH_SIZE} lr gamma: {LR_GAMMA} embed-dim: {EMBED_DIM} shuffle: {SHUFFLE} margin: {MARGIN} dataset: {DATASET} lr: {LR}')
 
 transform=transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),])
 
@@ -41,12 +42,17 @@ loss_dict={}
 best_loss=np.inf
 best_model=None
 
-#for lr in (2e-4,1e-4,7.5e-5):
+
+#for lr in (2e-2,1e-2,4e-3,2e-3,1e-3,):
 for lr in (LR,):
     print('\n\nlr: ',lr)
 
     resnet=create_image_model_resnet_18()
-    model=VisualGraphEmbeddingCombined(resnet, EMBED_DIM).cuda()
+    netvlad_model=NetvladModel(resnet)
+    netvlad_model_name='model_NV-SYN_lNone_b12_g0.75_sTrue_m0.5_dsummer_lr0.02.pth'
+    netvlad_model.load_state_dict(torch.load('models/'+netvlad_model_name)); print('Model:',netvlad_model_name)
+
+    model=VisualGraphEmbeddingCombinedPT(netvlad_model, EMBED_DIM).cuda()
 
     criterion=nn.TripletMarginLoss(margin=MARGIN)
 
@@ -85,7 +91,7 @@ for lr in (LR,):
         best_model=model
 
 print('\n----')           
-model_name=f'model_VGE-NV-CO_l{IMAGE_LIMIT}_b{BATCH_SIZE}_g{LR_GAMMA:0.2f}_e{EMBED_DIM}_s{SHUFFLE}_m{MARGIN}_d{DATASET}_lr{LR}.pth'
+model_name=f'model_VGE-NV-CO-PT_l{IMAGE_LIMIT}_b{BATCH_SIZE}_g{LR_GAMMA:0.2f}_e{EMBED_DIM}_s{SHUFFLE}_m{MARGIN}_d{DATASET}_lr{LR}.pth'
 print('Saving best model',model_name)
 torch.save(best_model.state_dict(),model_name)
 
@@ -98,4 +104,4 @@ plt.xlabel('Epoch')
 plt.ylabel('Loss')
 plt.legend()
 #plt.show()
-plt.savefig(f'loss_VGE-NV-CO_l{IMAGE_LIMIT}_b{BATCH_SIZE}_g{LR_GAMMA:0.2f}_e{EMBED_DIM}_s{SHUFFLE}_m{MARGIN}_d{DATASET}_lr{LR}.png')    
+plt.savefig(f'loss_VGE-NV-CO-PT_l{IMAGE_LIMIT}_b{BATCH_SIZE}_g{LR_GAMMA:0.2f}_e{EMBED_DIM}_s{SHUFFLE}_m{MARGIN}_d{DATASET}_lr{LR}.png')    

@@ -14,90 +14,75 @@ from semantic.scenegraphs import create_scenegraph_from_viewobjects, score_scene
 from semantic.scenegraphs2 import score_description_to_viewobjects, score_scenegraph_to_scenegraph
 from dataloading.data_loading import SynthiaDataset
 
-'''
-TODO
-
-Try-depth split B-200 (does not have to work everywhere), use class min-areas (F-160 roof) -> Seems good ✓
-Merge: small objects in that label, ordered by area, verify that *reduces* the number of blobs (check F-180, B-170) -> seems good, don't know how much difference ✓
-
-New, unified scoring
-Investigate 848->852, rel+nn+unused, rel+corner-05+nn+unused, rel+corner-10+nn+unused
-Investigate 898 -> before/after (bigger min-areas?, direction via distance/overlap?, ),
-Check SG->SG
-'''
-
-#TODO: Higher rel-count ?! -> No, not really
-#CONTINUE: eval indirect methods (VGE-UE / VGE-NV-CO), if sucessful possibly report retrieval @ K or grid-vote or dense db
-
-data=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/selection/')
+#data=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/selection/')
 
 #CHECK DO CREATION
-if False:
-    idx=0
-    all_vo = data.image_viewobjects[idx]
-    all_do = [DescriptionObject.from_viewobject(vo) for vo in all_vo]
-    all_vo_reconst=[ViewObject.from_description_object(do) for do in all_do]
+# if False:
+#     idx=0
+#     all_vo = data.image_viewobjects[idx]
+#     all_do = [DescriptionObject.from_viewobject(vo) for vo in all_vo]
+#     all_vo_reconst=[ViewObject.from_description_object(do) for do in all_do]
 
-    rgb= cv2.imread(data.image_paths[idx])
-    for vo in all_vo:
-        vo.draw_on_image(rgb)
-        #print(vo)
+#     rgb= cv2.imread(data.image_paths[idx])
+#     for vo in all_vo:
+#         vo.draw_on_image(rgb)
+#         #print(vo)
 
-    for do in all_do:
-        # print(do)
-        ViewObject.from_description_object(do).draw_on_image(rgb)
+#     for do in all_do:
+#         # print(do)
+#         ViewObject.from_description_object(do).draw_on_image(rgb)
 
-    score=score_description_to_viewobjects(all_do, all_vo, (1,1,1,1,-0.15), verbose=True )
-    print('score',score)
-    score=score_scenegraph_to_scenegraph(all_do, all_do, (1,1,1,1,-0.15), verbose=True )
-    print('score',score)    
+#     score=score_description_to_viewobjects(all_do, all_vo, (1,1,1,1,-0.15), verbose=True )
+#     print('score',score)
+#     score=score_scenegraph_to_scenegraph(all_do, all_do, (1,1,1,1,-0.15), verbose=True )
+#     print('score',score)    
 
 
-    cv2.imshow("",rgb)
-    cv2.waitKey()
+#     cv2.imshow("",rgb)
+#     cv2.waitKey()
 
-#EVAL HAND-PICKED INDICES
-if False:
-    idx0, idx1=0,4
-    vo0, vo1= data.image_viewobjects[idx0], data.image_viewobjects[idx1]
-    do0= [DescriptionObject.from_viewobject(vo) for vo in vo0]
-    do1= [DescriptionObject.from_viewobject(vo) for vo in vo1]    
+# #EVAL HAND-PICKED INDICES
+# if False:
+#     idx0, idx1=0,4
+#     vo0, vo1= data.image_viewobjects[idx0], data.image_viewobjects[idx1]
+#     do0= [DescriptionObject.from_viewobject(vo) for vo in vo0]
+#     do1= [DescriptionObject.from_viewobject(vo) for vo in vo1]    
 
-    rgb0, rgb1= cv2.imread(data.image_paths[idx0]), cv2.imread(data.image_paths[idx1])
-    for v in vo0: v.draw_on_image(rgb0)
-    for v in vo1: v.draw_on_image(rgb1)
+#     rgb0, rgb1= cv2.imread(data.image_paths[idx0]), cv2.imread(data.image_paths[idx1])
+#     for v in vo0: v.draw_on_image(rgb0)
+#     for v in vo1: v.draw_on_image(rgb1)
 
-    score=score_description_to_viewobjects(do0, vo1, (1,1,1,1,-0.15), verbose=True )
-    print('score:', score)
-    score=score_scenegraph_to_scenegraph(do0, do1, (1,1,1,1,-0.15), verbose=True )
-    print('score:', score)    
+#     score=score_description_to_viewobjects(do0, vo1, (1,1,1,1,-0.15), verbose=True )
+#     print('score:', score)
+#     score=score_scenegraph_to_scenegraph(do0, do1, (1,1,1,1,-0.15), verbose=True )
+#     print('score:', score)    
     
-    cv2.imshow("idx0", rgb0)
-    cv2.imshow("idx1", rgb1)
+#     cv2.imshow("idx0", rgb0)
+#     cv2.imshow("idx1", rgb1)
 
-    cv2.waitKey()
+#     cv2.waitKey()
 
-#EVAL HAND-PICKED VS. ALL
-#(1,1,1.5,1,0) 
-#(2,2,2,1,0)
-#(1,1,1,1,-0.25)
-#(1,0,1,1,-0.25)
-if True:
-    idx=4
-    all_vo= data.image_viewobjects[idx]
-    do_query = [DescriptionObject.from_viewobject(vo) for vo in all_vo]
+# #EVAL HAND-PICKED VS. ALL
+# #(1,1,1.5,1,0) 
+# #(2,2,2,1,0)
+# #(1,1,1,1,-0.25)
+# #(1,0,1,1,-0.25)
+# if True:
+#     idx=4
+#     all_vo= data.image_viewobjects[idx]
+#     do_query = [DescriptionObject.from_viewobject(vo) for vo in all_vo]
     
-    scores=np.zeros(len(data))
-    for train_idx in range(len(data)):
-        do_train= [DescriptionObject.from_viewobject(vo) for vo in data.image_viewobjects[train_idx]]
-        score= score_scenegraph_to_scenegraph(do_query, do_train, (1,1,1,1,-0.15) )
-        scores[train_idx]=score
+#     scores=np.zeros(len(data))
+#     for train_idx in range(len(data)):
+#         do_train= [DescriptionObject.from_viewobject(vo) for vo in data.image_viewobjects[train_idx]]
+#         score= score_scenegraph_to_scenegraph(do_query, do_train, (1,1,1,1,-0.15) )
+#         scores[train_idx]=score
 
-    sorted_indices=np.argsort( -1.0*scores)
-    print('sorted indices', sorted_indices[0:10])
-    print('scores', np.float16(scores[sorted_indices[0:10]]))
+#     sorted_indices=np.argsort( -1.0*scores)
+#     print('sorted indices', sorted_indices[0:10])
+#     print('scores', np.float16(scores[sorted_indices[0:10]]))
 
-quit()
+# quit()
 # data_winter=SynthiaDataset('data/SYNTHIA-SEQS-04-WINTER/selection/')
 # data_dawn=SynthiaDataset('data/SYNTHIA-SEQS-04-DAWN/selection/')
 
@@ -187,10 +172,7 @@ if __name__=='__main__':
         # for base_dir in ('data/SYNTHIA-SEQS-04-SUMMER/train', 'data/SYNTHIA-SEQS-04-SUMMER/test/', 'data/SYNTHIA-SEQS-04-SUMMER/dense', 'data/SYNTHIA-SEQS-04-SUMMER/full/', 
         #                  'data/SYNTHIA-SEQS-04-DAWN/train', 'data/SYNTHIA-SEQS-04-DAWN/test/', 
         #                  'data/SYNTHIA-SEQS-04-WINTER/train', 'data/SYNTHIA-SEQS-04-WINTER/test/'):
-        print('CARE: VO only')
-        for base_dir in ('data/SYNTHIA-SEQS-04-SUMMER/selection',
-                         'data/SYNTHIA-SEQS-04-DAWN/selection',
-                         'data/SYNTHIA-SEQS-04-WINTER/selection',):
+        for base_dir in ('data/SYNTHIA-SEQS-04-DAWN/test/', 'dadata/SYNTHIA-SEQS-04-WINTER/test/'):
 
             file_names=os.listdir( os.path.join(base_dir,'RGB', 'Stereo_Left', DIRECTIONS[0]) )
             print(f'{len(file_names)} positions for {base_dir}...')
@@ -211,10 +193,12 @@ if __name__=='__main__':
                     view_objects[direction][file_name]=vo
                     view_object_counts.append(len(vo))
 
-                    #sg=create_scenegraph_from_viewobjects(vo)
-                    #scene_graphs[direction][file_name]=sg
+                    sg= [DescriptionObject.from_viewobject(v) for v in vo]
+                    scene_graphs[direction][file_name]=sg
+
+                    assert len(vo)==len(sg)
 
                 print(f'Done, {np.mean(view_object_counts)} view-objects on average, saving')
 
             pickle.dump(view_objects, open(os.path.join(base_dir,'view_objects.pkl'),'wb'))
-            #pickle.dump(scene_graphs, open(os.path.join(base_dir,'scene_graphs.pkl'),'wb'))
+            pickle.dump(scene_graphs, open(os.path.join(base_dir,'scene_graphs.pkl'),'wb'))
