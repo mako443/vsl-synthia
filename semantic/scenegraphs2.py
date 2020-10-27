@@ -10,7 +10,7 @@ from semantic.imports import ViewObject, DescriptionObject
 '''
 Module for new description strategy
 '''
-def score_description_to_viewobjects(description_objects, view_objects, factors, verbose=False):
+def score_scenegraph_to_viewobjects(description_objects, view_objects, factors, verbose=False):
     a_label, a_color, a_corner, a_distance, a_unmentioned=factors
     assert a_unmentioned<=0
 
@@ -75,7 +75,7 @@ def score_scenegraph_to_scenegraph(graph0, graph1, factors, verbose=False):
     view_objects0= [ViewObject.from_description_object(do) for do in graph0]
     view_objects1= [ViewObject.from_description_object(do) for do in graph1]
 
-    score0= score_description_to_viewobjects(graph0, view_objects1, factors, verbose=verbose)
-    score1= score_description_to_viewobjects(graph1, view_objects0, factors, verbose=verbose)
+    score0= score_scenegraph_to_viewobjects(graph0, view_objects1, factors, verbose=verbose)
+    score1= score_scenegraph_to_viewobjects(graph1, view_objects0, factors, verbose=verbose)
     return np.mean((score0,score1))
                 
