@@ -8,7 +8,7 @@ from torchvision import transforms
 from scipy.spatial.transform import Rotation
 
 from semantic.imports import ViewObject, SceneGraph, SceneGraphObject, DIRECTIONS
-from visualgeometric.utils import create_scenegraph_data
+from visualgeometric.utils import create_description_data
 
 def wrap_angle(angle):
     return (angle + np.pi) % (2 * np.pi) - np.pi
@@ -17,7 +17,7 @@ def wrap_angle(angle):
 REFERENCE_ROTATION=np.fromstring('-0.00057973 0.00086285 1 0 -0.11839 0.99297 -0.00092542 0 0.99297 0.11839 0.00047349 0 44.388 3.1314 117.55 1', sep=" ").reshape((4,4)).T[0:3,0:3]
 
 class SynthiaDataset(Dataset):
-    def __init__(self, dirpath_main,transform=None, return_graph_data=False, load_netvlad_features=False, image_limit=None):
+    def __init__(self, dirpath_main,transform=None, return_graph_data=False, image_limit=None):
         assert os.path.isdir(dirpath_main)
 
         self.dirpath_main=dirpath_main
@@ -39,9 +39,9 @@ class SynthiaDataset(Dataset):
         file_names=sorted(os.listdir( os.path.join(dirpath_main,'RGB', 'Stereo_Left', DIRECTIONS[0]) ))
 
         vo_dict=pickle.load(open( os.path.join(dirpath_main,'view_objects.pkl'),'rb') )
-        sg_dict=pickle.load(open( os.path.join(dirpath_main,'scene_graphs.pkl'),'rb') )
+        do_dict=pickle.load(open( os.path.join(dirpath_main,'scene_graphs.pkl'),'rb') )
+        assert len(vo_dict)==len(do_dict)
 
-        #TODO: assume naive 90 deg. angles, anchored at F (re-varify across turn and cross-scene)
         idx=0
         for direction in DIRECTIONS:
             for file_name in file_names:
@@ -69,7 +69,8 @@ class SynthiaDataset(Dataset):
 
                 #View-Objects and Scene-Graphs
                 self.image_viewobjects.append(vo_dict[direction][file_name])
-                self.image_scenegraphs.append(sg_dict[direction][file_name])
+                self.image_scenegraphs.append(do_dict[direction][file_name])
+                assert len(self.image_viewobjects[-1]) == len(self.image_scenegraphs[-1])
 
                 self.image_omnis.append(direction)
 
@@ -84,19 +85,14 @@ class SynthiaDataset(Dataset):
 
         assert len(self.image_paths)==len(self.image_positions)==len(self.image_omnis)==len(self.image_orientations)==len(self.image_viewobjects)==len(self.image_scenegraphs)
 
-        if load_netvlad_features:
-            assert os.path.isfile( os.path.join(dirpath_main,'netvlad_features.pkl') )
-            self.image_netvlad_features=pickle.load( open(os.path.join(dirpath_main,'netvlad_features.pkl'), 'rb') )
-            assert len(self.image_netvlad_features)==len(self.image_paths)
-
         if return_graph_data:
             assert os.path.isfile( os.path.join(dirpath_main,'graph_embeddings.pkl') )
-            self.node_embeddings, self.edge_embeddings=pickle.load(open(os.path.join(dirpath_main,'graph_embeddings.pkl'), 'rb'))
-            self.image_scenegraph_data=[ create_scenegraph_data(sg, self.node_embeddings, self.edge_embeddings) for sg in self.image_scenegraphs ]
+            self.node_embeddings= pickle.load(open(os.path.join(dirpath_main,'graph_embeddings.pkl'), 'rb'))
+            self.image_scenegraph_data=[ create_description_data(do, self.node_embeddings) for do in self.image_scenegraphs ]
             assert len(self.image_scenegraph_data)==len(self.image_scenegraphs)
 
             empty_graphs=[1 for sg in self.image_scenegraphs if sg.is_empty()]
-            #print(f'Empty Graphs: {np.sum(empty_graphs)} of {len(self.image_positions)}')            
+            print(f'Empty Graphs: {np.sum(empty_graphs)} of {len(self.image_positions)}')            
 
         print(f'SynthiaDataset: {self.scene_name}, {len(self.image_paths)} images from {self.dirpath_main}')
 
@@ -120,8 +116,8 @@ class SynthiaDataset(Dataset):
 
 #TODO: detect&match Keypoints for more challenging triplets
 class SynthiaDatasetTriplet(SynthiaDataset):
-    def __init__(self, dirpath_main, transform=None, return_graph_data=False, load_netvlad_features=False, image_limit=None): 
-        super().__init__(dirpath_main, transform=transform, return_graph_data=return_graph_data,load_netvlad_features=load_netvlad_features, image_limit=image_limit)
+    def __init__(self, dirpath_main, transform=None, return_graph_data=False, image_limit=None): 
+        super().__init__(dirpath_main, transform=transform, return_graph_data=return_graph_data, image_limit=image_limit)
         #TODO/better: based on location and angle | needs to resolve angle bugs?
         
         #CARE: Thresholds currently in steps between images, calculated from the full dataset -> independent of the split!

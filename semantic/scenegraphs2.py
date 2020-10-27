@@ -11,8 +11,8 @@ from semantic.imports import ViewObject, DescriptionObject
 Module for new description strategy
 '''
 #TODO: unmentioned per class or per object?
-def score_description_to_viewobjects(description_objects, view_objects, factors, verbose=False):
-    a_label, a_color, a_corner, a_distance, a_unmentioned=factors
+def score_scenegraph_to_viewobjects(description_objects, view_objects, score_params, verbose=False):
+    a_label, a_color, a_corner, a_distance, a_unmentioned=score_params
     assert a_unmentioned<=0
 
     best_scores=np.array([0.0 for do in description_objects])
