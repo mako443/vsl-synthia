@@ -58,8 +58,6 @@ class ViewObject:
     __slots__ = ['label', 'bbox', 'centroid_i', 'centroid_c', 'color']
     BG_DIST_THRESH=15
 
-    #TODO: from_description_object()
-
     def __init__(self, label, bbox, centroid_i, centroid_c, color):
         self.label=label
         self.bbox=np.array(bbox) # (xmin,ymin,zmin,xmax,ymax,zmax)
