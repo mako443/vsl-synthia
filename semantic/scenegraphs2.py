@@ -10,7 +10,6 @@ from semantic.imports import ViewObject, DescriptionObject
 '''
 Module for new description strategy
 '''
-#TODO: unmentioned per class or per object?
 def score_description_to_viewobjects(description_objects, view_objects, factors, verbose=False):
     a_label, a_color, a_corner, a_distance, a_unmentioned=factors
     assert a_unmentioned<=0
@@ -39,8 +38,8 @@ def score_description_to_viewobjects(description_objects, view_objects, factors,
             if np.argmin(corner_distances)==CORNER_NAMES.index(sub.corner): corner_score=a_corner
 
             #Distance (FG/BG)
-            if sub.distance=='foreground' and obj.centroid_c[2]<ViewObject.BG_DIST_THRESH: dist_score=a_distance
-            if sub.distance=='background' and obj.centroid_c[2]>ViewObject.BG_DIST_THRESH: dist_score=a_distance
+            if sub.distance=='foreground' and obj.centroid_i[2]<ViewObject.BG_DIST_THRESH: dist_score=a_distance
+            if sub.distance=='background' and obj.centroid_i[2]>ViewObject.BG_DIST_THRESH: dist_score=a_distance
             #print(obj_score)
 
             obj_score= a_label + color_score + corner_score + dist_score
@@ -67,4 +66,16 @@ def score_description_to_viewobjects(description_objects, view_objects, factors,
     score=np.mean(best_scores) + penalty #Penalty is negative
 
     return np.clip(score,0,1)
+
+'''
+SGs as list of Description-Objects, re-creating View-Objects by using the respective cluster-centers, running DO->VO in both directions, taking average
+'''
+def score_scenegraph_to_scenegraph(graph0, graph1, factors, verbose=False):
+    #Reconstruct the View-Objects
+    view_objects0= [ViewObject.from_description_object(do) for do in graph0]
+    view_objects1= [ViewObject.from_description_object(do) for do in graph1]
+
+    score0= score_description_to_viewobjects(graph0, view_objects1, factors, verbose=verbose)
+    score1= score_description_to_viewobjects(graph1, view_objects0, factors, verbose=verbose)
+    return np.mean((score0,score1))
                 

@@ -11,7 +11,7 @@ from semantic.imports import ViewObject, SceneGraph, SceneGraphObject, draw_scen
 
 from semantic.viewobjects import create_view_objects
 from semantic.scenegraphs import create_scenegraph_from_viewobjects, score_scenegraph_to_viewobjects
-from semantic.scenegraphs2 import score_description_to_viewobjects
+from semantic.scenegraphs2 import score_description_to_viewobjects, score_scenegraph_to_scenegraph
 from dataloading.data_loading import SynthiaDataset
 
 '''
@@ -33,20 +33,25 @@ data=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/selection/')
 
 #CHECK DO CREATION
 if False:
-    idx=12
+    idx=0
     all_vo = data.image_viewobjects[idx]
     all_do = [DescriptionObject.from_viewobject(vo) for vo in all_vo]
+    all_vo_reconst=[ViewObject.from_description_object(do) for do in all_do]
 
     rgb= cv2.imread(data.image_paths[idx])
     for vo in all_vo:
         vo.draw_on_image(rgb)
         #print(vo)
 
-    #for do in all_do:
-    #   print(do)
+    for do in all_do:
+        # print(do)
+        ViewObject.from_description_object(do).draw_on_image(rgb)
 
-    score=score_description_to_viewobjects(all_do, all_vo, (1,1,1,1,-1), verbose=True )
+    score=score_description_to_viewobjects(all_do, all_vo, (1,1,1,1,-0.15), verbose=True )
     print('score',score)
+    score=score_scenegraph_to_scenegraph(all_do, all_do, (1,1,1,1,-0.15), verbose=True )
+    print('score',score)    
+
 
     cv2.imshow("",rgb)
     cv2.waitKey()
@@ -56,20 +61,16 @@ if False:
     idx0, idx1=0,4
     vo0, vo1= data.image_viewobjects[idx0], data.image_viewobjects[idx1]
     do0= [DescriptionObject.from_viewobject(vo) for vo in vo0]
-    do1= [DescriptionObject.from_viewobject(vo) for vo in vo1]
-    # for do in do0:
-    #     print(do)
-    # print('--')
-    # for do in do1:
-    #     print(do)    
-    # print('--')        
+    do1= [DescriptionObject.from_viewobject(vo) for vo in vo1]    
 
     rgb0, rgb1= cv2.imread(data.image_paths[idx0]), cv2.imread(data.image_paths[idx1])
     for v in vo0: v.draw_on_image(rgb0)
     for v in vo1: v.draw_on_image(rgb1)
 
-    score=score_description_to_viewobjects(do0, vo1, (1,1,1,1,-1), verbose=True )
+    score=score_description_to_viewobjects(do0, vo1, (1,1,1,1,-0.15), verbose=True )
     print('score:', score)
+    score=score_scenegraph_to_scenegraph(do0, do1, (1,1,1,1,-0.15), verbose=True )
+    print('score:', score)    
     
     cv2.imshow("idx0", rgb0)
     cv2.imshow("idx1", rgb1)
@@ -82,18 +83,19 @@ if False:
 #(1,1,1,1,-0.25)
 #(1,0,1,1,-0.25)
 if True:
-    idx=0
+    idx=4
     all_vo= data.image_viewobjects[idx]
-    all_do = [DescriptionObject.from_viewobject(vo) for vo in all_vo]
+    do_query = [DescriptionObject.from_viewobject(vo) for vo in all_vo]
     
     scores=np.zeros(len(data))
-    for test_index in range(len(data)):
-        score= score_description_to_viewobjects(all_do, data.image_viewobjects[test_index], (1,0,1,1,-0.25) )
-        scores[test_index]=score
+    for train_idx in range(len(data)):
+        do_train= [DescriptionObject.from_viewobject(vo) for vo in data.image_viewobjects[train_idx]]
+        score= score_scenegraph_to_scenegraph(do_query, do_train, (1,1,1,1,-0.15) )
+        scores[train_idx]=score
 
     sorted_indices=np.argsort( -1.0*scores)
     print('sorted indices', sorted_indices[0:10])
-    print('scores', np.float16(scores[0:10]))
+    print('scores', np.float16(scores[sorted_indices[0:10]]))
 
 quit()
 # data_winter=SynthiaDataset('data/SYNTHIA-SEQS-04-WINTER/selection/')

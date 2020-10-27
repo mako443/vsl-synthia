@@ -60,7 +60,7 @@ class ViewObject:
 
     def __init__(self, label, bbox, centroid_i, centroid_c, color):
         self.label=label
-        self.bbox=np.array(bbox) # (xmin,ymin,zmin,xmax,ymax,zmax)
+        self.bbox= np.array(bbox) if bbox is not None else None # (xmin,ymin,zmin,xmax,ymax,zmax)
         self.centroid_i= centroid_i
         self.centroid_c= centroid_c
         self.color=color #CARE: given as BGR
@@ -68,11 +68,19 @@ class ViewObject:
     def draw_on_image(self,img):
         color=CLASS_COLORS[self.label]
         color=(color[2],color[1],color[0])
-        cv2.rectangle(img, (int(self.bbox[0]), int(self.bbox[1])), (int(self.bbox[3]), int(self.bbox[4])), color, thickness=5)
+        if self.bbox is not None:
+            cv2.rectangle(img, (int(self.bbox[0]), int(self.bbox[1])), (int(self.bbox[3]), int(self.bbox[4])), color, thickness=5)
         cv2.circle(img, (int(self.centroid_i[0]),int(self.centroid_i[1])), 9, color, -1 )
 
     def __str__(self):
         return f'{self.label} at {self.centroid_i} color {self.color} dist {self.centroid_c[2]}'
+
+    @classmethod
+    def from_description_object(cls, do):
+        dist = ViewObject.BG_DIST_THRESH*0.5 if do.distance=='foreground' else ViewObject.BG_DIST_THRESH*2.0
+        centroid_i= np.hstack(( CORNERS[CORNER_NAMES.index(do.corner)]*(IMAGE_WIDTH,IMAGE_HEIGHT),dist ))
+        color= COLORS[COLOR_NAMES.index(do.color)]
+        return ViewObject(do.label, None, centroid_i, None, color)
 
 def draw_scenegraph_on_image(img, scene_graph_or_relationships):
     relationships = scene_graph_or_relationships if type(scene_graph_or_relationships) is list else scene_graph_or_relationships.relationships
@@ -86,6 +94,9 @@ def draw_scenegraph_on_image(img, scene_graph_or_relationships):
         cv2.arrowedLine(img, (p0[0],p0[1]), (p1[0],p1[1]), (0,0,255), thickness=4)
         cv2.putText(img,rel[1]+" of",(p0[0],p0[1]),cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0,0,255), thickness=2)    
 
+'''
+DEPRECATED: SceneGraph should now be a collection of SGOs, no relationships anymore.
+'''
 class SceneGraph:
     def __init__(self):
         self.relationships=[]
@@ -124,7 +135,9 @@ class SceneGraph:
         #     cv2.arrowedLine(img, (p0[0],p0[1]), (p1[0],p1[1]), (0,0,255), thickness=3)
         #     cv2.putText(img,rel[1]+" of",(p0[0],p0[1]),cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0,0,255), thickness=2)
 
-
+'''
+DEPRECATED: DescriptionObject should be moved here
+'''
 class SceneGraphObject:
     __slots__ = ['label', 'color', 'corner']
 
@@ -154,6 +167,15 @@ class SceneGraphObject:
 #TODO: evaluate Small&Big objects (small: closest corner, big: touching corner)
 class DescriptionObject:
     __slots__= ['label','color', 'corner','distance']
+
+    @classmethod
+    def generate_caption(cls, description_objects):
+        text=""
+        for do in description_objects:
+            t=f'In the {do.corner} {do.distance} there is a {do.color} {do.label}. '
+            if t not in text:
+                text+=t
+        return text
 
     @classmethod
     def from_viewobject(cls, v):

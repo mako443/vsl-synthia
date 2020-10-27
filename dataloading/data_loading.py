@@ -193,7 +193,7 @@ class SynthiaDatasetMultiTriplet(SynthiaDataset):
 
 
 if __name__=='__main__':
-    summer=SynthiaDatasetTriplet('data/old/SYNTHIA-SEQS-04-SUMMER/selection', return_graph_data=False)
+    summer=SynthiaDatasetTriplet('data/SYNTHIA-SEQS-04-SUMMER/selection', return_graph_data=False)
     a,p,n=summer[10]
     a.show()
     p.show()
