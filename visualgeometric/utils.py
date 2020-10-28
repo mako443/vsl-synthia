@@ -14,8 +14,8 @@ def create_embedding_dictionaries(base_directories):
     all_description_objects=[]
     for base_dir in base_directories:
         assert os.path.isdir(base_dir)
-        assert os.path.isfile( os.path.join(base_dir,'description_objects.pkl') )
-        do_dict=pickle.load(open(os.path.join(base_dir,'description_objects.pkl') , 'rb'))
+        assert os.path.isfile( os.path.join(base_dir,'scene_graphs.pkl') )
+        do_dict=pickle.load(open(os.path.join(base_dir,'scene_graphs.pkl') , 'rb'))
         for omni in ('Omni_F', 'Omni_B', 'Omni_R', 'Omni_L'):
             all_description_objects.extend( do_dict[omni].values() )
 

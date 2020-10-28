@@ -67,12 +67,15 @@ class ViewObject:
         self.centroid_c= centroid_c
         self.color=color #CARE: given as BGR
 
-    def draw_on_image(self,img):
+    def draw_on_image(self,img, draw_label=False):
         color=CLASS_COLORS[self.label]
         color=(color[2],color[1],color[0])
         if self.bbox is not None:
             cv2.rectangle(img, (int(self.bbox[0]), int(self.bbox[1])), (int(self.bbox[3]), int(self.bbox[4])), color, thickness=5)
-        cv2.circle(img, (int(self.centroid_i[0]),int(self.centroid_i[1])), 9, color, -1 )
+        if draw_label:
+            cv2.putText(img,self.label,(int(self.centroid_i[0])-50,int(self.centroid_i[1])),cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0,0,255), thickness=2)    
+        else:
+            cv2.circle(img, (int(self.centroid_i[0]),int(self.centroid_i[1])), 9, color, -1 )
 
     def __str__(self):
         return f'{self.label} at {self.centroid_i} color {self.color} dist {self.centroid_c[2]}'

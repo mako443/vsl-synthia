@@ -14,7 +14,21 @@ from semantic.scenegraphs import create_scenegraph_from_viewobjects, score_scene
 from semantic.scenegraphs2 import score_description_to_viewobjects, score_scenegraph_to_scenegraph
 from dataloading.data_loading import SynthiaDataset
 
-#data=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/selection/')
+data=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/train/')
+
+omni='Omni_F'
+name='10.png'
+for idx, p in enumerate(data.image_paths):
+    if omni in p and name in p: break
+print('idx',idx)
+
+rgb=cv2.imread(data.image_paths[idx])
+vo =data.image_viewobjects[idx]
+for v in vo: v.draw_on_image(rgb, draw_label=True)
+
+cv2.imshow("",rgb); cv2.waitKey()
+cv2.imwrite(f'img-{omni}-{idx}.png',rgb)
+
 
 #CHECK DO CREATION
 # if False:
