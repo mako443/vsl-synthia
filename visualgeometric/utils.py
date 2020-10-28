@@ -68,22 +68,22 @@ def create_description_data(description_objects, node_dict):
         obj_idx=len(node_features)-1        
 
         #Node and edge for color
-        node_features.append(node_dict[obj.color])
+        node_features.append(node_dict[do.color])
         edges.append( (len(node_features)-1, obj_idx) )      
 
         #Node and edge for corner
-        node_features.append(node_dict[obj.corner])
+        node_features.append(node_dict[do.corner])
         edges.append( (len(node_features)-1, obj_idx) ) 
 
         #Node and edge for distance
-        node_features.append(node_dict[obj.distance])
+        node_features.append(node_dict[do.distance])
         edges.append( (len(node_features)-1, obj_idx) )                   
      
     node_features=np.array(node_features)
     edges=np.array(edges).T #Transpose for PyG-format
     # edge_features=np.array(edge_features)
-    assert edges.shape[1]== len(scene_graph.relationships) * (2*2+1)
-    assert len(node_features)==len(scene_graph.relationships) * (2*3)
+    assert edges.shape[1]==len(description_objects)*3
+    assert len(node_features)==len(description_objects)*4
 
     #return np.array(node_features), np.array(edges), np.array(edge_features)
     # return torch_geometric.data.Data(x=torch.from_numpy(node_features.astype(np.int64)),
@@ -94,8 +94,10 @@ def create_description_data(description_objects, node_dict):
                                      edge_index=torch.from_numpy(edges.astype(np.int64)))
 
 if __name__ == "__main__":
-    directories=('data/SYNTHIA-SEQS-04-SUMMER/train', 'data/SYNTHIA-SEQS-04-SUMMER/test/', 'data/SYNTHIA-SEQS-04-SUMMER/full', 'data/SYNTHIA-SEQS-04-SUMMER/dense/',
-                 'data/SYNTHIA-SEQS-04-DAWN/train', 'data/SYNTHIA-SEQS-04-DAWN/test/', 'data/SYNTHIA-SEQS-04-DAWN/full/', 
-                 'data/SYNTHIA-SEQS-04-WINTER/train', 'data/SYNTHIA-SEQS-04-WINTER/test/', 'data/SYNTHIA-SEQS-04-WINTER/full/')
+    # directories=('data/SYNTHIA-SEQS-04-SUMMER/train', 'data/SYNTHIA-SEQS-04-SUMMER/test/', 'data/SYNTHIA-SEQS-04-SUMMER/full', 'data/SYNTHIA-SEQS-04-SUMMER/dense/',
+    #              'data/SYNTHIA-SEQS-04-DAWN/train', 'data/SYNTHIA-SEQS-04-DAWN/test/', 'data/SYNTHIA-SEQS-04-DAWN/full/', 
+    #              'data/SYNTHIA-SEQS-04-WINTER/train', 'data/SYNTHIA-SEQS-04-WINTER/test/', 'data/SYNTHIA-SEQS-04-WINTER/full/')
+    directories=('data/SYNTHIA-SEQS-04-SUMMER/dense', 'data/SYNTHIA-SEQS-04-SUMMER/test/',
+                 'data/SYNTHIA-SEQS-04-DAWN/test')    
     
     create_embedding_dictionaries(directories)

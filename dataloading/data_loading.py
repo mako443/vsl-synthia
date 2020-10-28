@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 from scipy.spatial.transform import Rotation
 
-from semantic.imports import ViewObject, SceneGraph, SceneGraphObject, DIRECTIONS
+from semantic.imports import ViewObject, SceneGraph, SceneGraphObject, DIRECTIONS, DescriptionObject
 from visualgeometric.utils import create_description_data
 
 def wrap_angle(angle):
@@ -17,12 +17,13 @@ def wrap_angle(angle):
 REFERENCE_ROTATION=np.fromstring('-0.00057973 0.00086285 1 0 -0.11839 0.99297 -0.00092542 0 0.99297 0.11839 0.00047349 0 44.388 3.1314 117.55 1', sep=" ").reshape((4,4)).T[0:3,0:3]
 
 class SynthiaDataset(Dataset):
-    def __init__(self, dirpath_main,transform=None, return_graph_data=False, image_limit=None):
+    def __init__(self, dirpath_main,transform=None, return_graph_data=False, return_caption_data=False, image_limit=None):
         assert os.path.isdir(dirpath_main)
 
         self.dirpath_main=dirpath_main
         self.transform=transform       
         self.return_graph_data=return_graph_data 
+        self.return_caption_data=return_caption_data
         self.transform=transform
         self.image_limit=image_limit
 
@@ -91,10 +92,17 @@ class SynthiaDataset(Dataset):
             self.image_scenegraph_data=[ create_description_data(do, self.node_embeddings) for do in self.image_scenegraphs ]
             assert len(self.image_scenegraph_data)==len(self.image_scenegraphs)
 
-            empty_graphs=[1 for sg in self.image_scenegraphs if sg.is_empty()]
-            print(f'Empty Graphs: {np.sum(empty_graphs)} of {len(self.image_positions)}')            
+            #empty_graphs=[1 for sg in self.image_scenegraphs if sg.is_empty()]
+            empty_graphs=[1 for sg in self.image_scenegraphs if len(sg)==0]
+            print(f'Empty Graphs: {np.sum(empty_graphs)} of {len(self.image_positions)}')     
+
+        if return_caption_data:
+            assert os.path.isfile( os.path.join(dirpath_main,'known_words.pkl') )
+            self.image_caption_data=[ DescriptionObject.generate_caption(sg) for sg in self.image_scenegraphs ]
+            assert len(self.image_caption_data)==len(self.image_scenegraphs)
 
         print(f'SynthiaDataset: {self.scene_name}, {len(self.image_paths)} images from {self.dirpath_main}')
+        
 
     def __len__(self):
         if self.image_limit is not None:
@@ -112,12 +120,19 @@ class SynthiaDataset(Dataset):
         if self.return_graph_data:
             return {'images': image, 'graphs': self.image_scenegraph_data[index]}
 
+        if self.return_caption_data:
+            return {'images': image, 'captions': self.image_caption_data[index]}
+
         return image    
+
+    def get_known_words(self):
+        kw=pickle.load(open(os.path.join(self.dirpath_main,'known_words.pkl'),'rb'))
+        return kw.keys()
 
 #TODO: detect&match Keypoints for more challenging triplets
 class SynthiaDatasetTriplet(SynthiaDataset):
-    def __init__(self, dirpath_main, transform=None, return_graph_data=False, image_limit=None): 
-        super().__init__(dirpath_main, transform=transform, return_graph_data=return_graph_data, image_limit=image_limit)
+    def __init__(self, dirpath_main, transform=None, return_graph_data=False, return_caption_data=False, image_limit=None): 
+        super().__init__(dirpath_main, transform=transform, return_graph_data=return_graph_data, return_caption_data=return_caption_data, image_limit=image_limit)
         #TODO/better: based on location and angle | needs to resolve angle bugs?
         
         #CARE: Thresholds currently in steps between images, calculated from the full dataset -> independent of the split!
@@ -175,6 +190,10 @@ class SynthiaDatasetTriplet(SynthiaDataset):
             return {'images_anchor':anchor_image, 'images_positive':positive_image, 'images_negative':negative_image,
                     'graphs_anchor':self.image_scenegraph_data[anchor_index], 'graphs_positive':self.image_scenegraph_data[positive_index], 'graphs_negative':self.image_scenegraph_data[negative_index]}
 
+        if self.return_caption_data:
+            return {'images_anchor':anchor_image, 'images_positive':positive_image, 'images_negative':negative_image,
+                    'captions_anchor':self.image_caption_data[anchor_index], 'captions_positive':self.image_caption_data[positive_index], 'captions_negative':self.image_caption_data[negative_index]}
+
         return anchor_image, positive_image, negative_image
 
 #TODO
@@ -187,7 +206,12 @@ class SynthiaDatasetMultiTriplet(SynthiaDataset):
 
 
 if __name__=='__main__':
-    summer=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/selection', return_graph_data=False)
+    summer_dense=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/dense', return_caption_data=True)
+    # summer_test =SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/test', return_graph_data=False)
+    # dawn_test   =SynthiaDataset('data/SYNTHIA-SEQS-04-DAWN/test', return_graph_data=False)
+    quit()
+
+
     a,p,n=summer[10]
     a.show()
     p.show()

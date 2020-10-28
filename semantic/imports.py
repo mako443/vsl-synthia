@@ -58,8 +58,6 @@ class ViewObject:
     __slots__ = ['label', 'bbox', 'centroid_i', 'centroid_c', 'color']
     BG_DIST_THRESH=15
 
-    #TODO: from_description_object()
-
     def __init__(self, label, bbox, centroid_i, centroid_c, color):
         self.label=label
         self.bbox= np.array(bbox) if bbox is not None else None # (xmin,ymin,zmin,xmax,ymax,zmax)
@@ -169,17 +167,18 @@ class SceneGraphObject:
 ###
 # New strategy: object descriptions
 ###
-#TODO: evaluate Small&Big objects (small: closest corner, big: touching corner)
 class DescriptionObject:
     __slots__= ['label','color', 'corner','distance']
 
     @classmethod
     def generate_caption(cls, description_objects):
+        if len(description_objects)==0:
+            return 'Empty graph.'
+
         text=""
         for do in description_objects:
             t=f'In the {do.corner} {do.distance} there is a {do.color} {do.label}. '
-            if t not in text:
-                text+=t
+            text+=t
         return text
 
     @classmethod

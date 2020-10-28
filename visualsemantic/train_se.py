@@ -16,26 +16,33 @@ from torch_geometric.data import DataLoader #Use the PyG DataLoader
 
 from dataloading.data_loading import SynthiaDataset,SynthiaDatasetTriplet
 from visualgeometric.geometric_embedding import GeometricEmbedding, PairwiseRankingLoss
+from visualsemantic.semantic_embedding import SemanticEmbedding
 
 '''
-Module to train a simple Graph-Embedding model to score the similarity of graphs (using no visual information)
+Module to train a simple Semantic-Embedding model to score the similarity of captions (using no visual information)
 '''
+
 IMAGE_LIMIT=64
-BATCH_SIZE=8
+BATCH_SIZE=4 #TODO: higher batches!!
 LR_GAMMA=0.75
-EMBED_DIM_GEOMETRIC=100
+EMBED_DIM=512
 SHUFFLE=True
 MARGIN=0.5
 
 DATASET='SUMMER' #summer-dawn
 
-LR= -1
+#CAPTURE arg values
+LR=float(sys.argv[-1])
 
-print(f'Geometric Embedding training: image limit: {IMAGE_LIMIT} ds: {DATASET} bs: {BATCH_SIZE} lr gamma: {LR_GAMMA} embed-dim: {EMBED_DIM_GEOMETRIC} margin: {MARGIN} lr:{LR}')
+print(f'Semantic Embedding training: image limit: {IMAGE_LIMIT} ds: {DATASET} bs: {BATCH_SIZE} lr gamma: {LR_GAMMA} embed-dim: {EMBED_DIM} margin: {MARGIN} lr:{LR}')
 
-transform=transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),])
+transform=transforms.Compose([
+    #transforms.Resize((950,1000)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+])
 
-if DATASET=='SUMMER': data_set=SynthiaDatasetTriplet('data/SYNTHIA-SEQS-04-SUMMER/dense', transform=transform, image_limit=IMAGE_LIMIT, return_graph_data=True)
+if DATASET=='SUMMER': data_set=SynthiaDatasetTriplet('data/SYNTHIA-SEQS-04-SUMMER/dense', transform=transform, image_limit=IMAGE_LIMIT, return_caption_data=True)
 
 #Option: shuffle, pin_memory crashes on my system, 
 data_loader=DataLoader(data_set, batch_size=BATCH_SIZE, num_workers=2, pin_memory=False, shuffle=SHUFFLE) 
@@ -44,32 +51,30 @@ loss_dict={}
 best_loss=np.inf
 best_model=None
 
-#TODO: try around 5e-3?, biggest possible batches
-for lr in (5e-4*32, 5e-4*16, 5e-4*8):
+for lr in (5e-3,1e-3,5e-4):
 #for lr in (LR,):
     print('\n\nlr: ',lr)
 
-    model=GeometricEmbedding(EMBED_DIM_GEOMETRIC)
+    model=SemanticEmbedding(data_set.get_known_words(),EMBED_DIM)
     model.cuda()
 
     criterion=nn.TripletMarginLoss(margin=MARGIN)
-
-    optimizer=optim.Adam(model.parameters(), lr=lr) #Adam is ok for PyG
+    optimizer=optim.Adam(model.parameters(), lr=lr) #Adam is ok for PyG | Apparently also for packed_sequence!
     scheduler=optim.lr_scheduler.ExponentialLR(optimizer,LR_GAMMA)   
 
     loss_dict[lr]=[]
-    for epoch in range(12):
+    for epoch in range(6):
         epoch_loss_sum=0.0
         for i_batch, batch in enumerate(data_loader):
             
             optimizer.zero_grad()
             #print(batch)
             
-            a_out=model(batch['graphs_anchor'].to('cuda'))
-            p_out=model(batch['graphs_positive'].to('cuda'))
-            n_out=model(batch['graphs_negative'].to('cuda'))
-            loss=criterion(a_out,p_out,n_out)
+            a_out=model(batch['captions_anchor'])
+            p_out=model(batch['captions_positive'])
+            n_out=model(batch['captions_negative'])
 
+            loss=criterion(a_out,p_out,n_out)
             loss.backward()
             optimizer.step()
 
@@ -89,7 +94,7 @@ for lr in (5e-4*32, 5e-4*16, 5e-4*8):
         best_model=model
 
 print('\n----')           
-model_name=f'model_GeometricEmbed_l{IMAGE_LIMIT}_d{DATASET}_b{BATCH_SIZE}_g{LR_GAMMA:0.2f}_e{EMBED_DIM_GEOMETRIC}_m{MARGIN}_lr{LR}.pth'
+model_name=f'model_SemanticEmbed_l{IMAGE_LIMIT}_d{DATASET}_b{BATCH_SIZE}_g{LR_GAMMA:0.2f}_e{EMBED_DIM}_s{SHUFFLE}_m{MARGIN}_lr{LR}.pth'
 print('Saving best model',model_name)
 torch.save(best_model.state_dict(),model_name)
 
@@ -98,8 +103,6 @@ for k in loss_dict.keys():
     line, = plt.plot(l)
     line.set_label(k)
 plt.gca().set_ylim(bottom=0.0) #Set the bottom to 0.0
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
 plt.legend()
 #plt.show()
-plt.savefig(f'loss_GraphEmbed_l{IMAGE_LIMIT}_d{DATASET}_b{BATCH_SIZE}_g{LR_GAMMA:0.2f}_e{EMBED_DIM_GEOMETRIC}_m{MARGIN}_lr{LR}.png')    
+plt.savefig(f'loss_SemanticEmbed_l{IMAGE_LIMIT}_d{DATASET}_b{BATCH_SIZE}_g{LR_GAMMA:0.2f}_e{EMBED_DIM}_s{SHUFFLE}_m{MARGIN}_lr{LR}.png')    
