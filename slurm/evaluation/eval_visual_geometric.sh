@@ -9,4 +9,4 @@
 #SBATCH --output=slurm-%j.out
 #SBATCH --error=slurm-%j.out
 
-srun python3 -m evaluation.visual_geometric eval-VGE-CO-PT
+srun python3 -m evaluation.visual_geometric "$@"

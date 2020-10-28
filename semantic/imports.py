@@ -164,7 +164,6 @@ class SceneGraphObject:
 ###
 # New strategy: object descriptions
 ###
-#TODO: evaluate Small&Big objects (small: closest corner, big: touching corner)
 class DescriptionObject:
     __slots__= ['label','color', 'corner','distance']
 

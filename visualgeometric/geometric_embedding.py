@@ -33,14 +33,14 @@ class GeometricEmbedding(torch.nn.Module):
         
         x = self.node_embedding(graphs.x) #CARE: is this ok? X seems to be simply stacked
         edges=graphs.edge_index
-        edge_attr=graphs.edge_attr
+        # edge_attr=graphs.edge_attr
         batch=graphs.batch
 
-        x = self.conv1(x, edges, edge_attr)
+        x = self.conv1(x, edges)
         x = F.relu(x)
-        x = self.conv2(x, edges, edge_attr)
+        x = self.conv2(x, edges)
         x = F.relu(x)
-        x = self.conv3(x, edges, edge_attr)
+        x = self.conv3(x, edges)
         x = global_mean_pool(x, batch)  # [batch_size, hidden_channels]
 
         x= x/torch.norm(x, dim=1,keepdim=True) #Norm output
