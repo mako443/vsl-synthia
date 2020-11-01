@@ -7,7 +7,7 @@ import torch
 from torchvision import transforms
 from torch_geometric.data import DataLoader
 
-from evaluation.evaluation_functions import eval_featureVectors_scoresDict, eval_featureVectors
+from evaluation.evaluation_functions import eval_featureVectors_scoresDict, eval_featureVectors, print_topK
 from dataloading.data_loading import SynthiaDataset
 from visualgeometric.geometric_embedding import GeometricEmbedding
 from retrieval.netvlad import NetvladModel
@@ -124,14 +124,14 @@ if __name__ == "__main__":
         features_name_db   ='features_GE_e100_dSUMMER-dense.pkl'
         features_name_query='features_GE_e100_dSUMMER-test.pkl'
         features_db, features_query=pickle.load(open('evaluation_res/'+features_name_db, 'rb')), pickle.load(open('evaluation_res/'+features_name_query, 'rb')); print('features:',features_name_db, features_name_query)
-        pos_results, ori_results=eval_featureVectors(data_summer_dense, data_summer_test, features_db, features_query, similarity='l2')
-        print(pos_results, ori_results,'\n')         
+        thresh_results=eval_featureVectors(data_summer_dense, data_summer_test, features_db, features_query, similarity='l2')
+        print_topK(thresh_results)        
 
         features_name_db   ='features_GE_e100_dSUMMER-dense.pkl'
         features_name_query='features_GE_e100_dDAWN-test.pkl'
         features_db, features_query=pickle.load(open('evaluation_res/'+features_name_db, 'rb')), pickle.load(open('evaluation_res/'+features_name_query, 'rb')); print('features:',features_name_db, features_name_query)
-        pos_results, ori_results=eval_featureVectors(data_summer_dense, data_dawn_test, features_db, features_query, similarity='l2')
-        print(pos_results, ori_results,'\n')         
+        thresh_results=eval_featureVectors(data_summer_dense, data_dawn_test, features_db, features_query, similarity='l2')
+        print_topK(thresh_results)        
 
     if 'eval-VGE-CO' in sys.argv:      
         features_name_db   ='features_VGE-CO_mVGE-NV-CO-summer_dSUMMER-dense.pkl'
