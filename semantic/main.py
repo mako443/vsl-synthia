@@ -10,11 +10,39 @@ from semantic.imports import CLASS_IDS, CLASS_COLORS, RELATIONSHIP_TYPES, DIRECT
 from semantic.imports import ViewObject, SceneGraph, SceneGraphObject, draw_scenegraph_on_image, DescriptionObject
 
 from semantic.viewobjects import create_view_objects
-from semantic.scenegraphs import create_scenegraph_from_viewobjects, score_scenegraph_to_viewobjects
-from semantic.scenegraphs2 import score_description_to_viewobjects, score_scenegraph_to_scenegraph
-from dataloading.data_loading import SynthiaDataset
+#from semantic.scenegraphs import create_scenegraph_from_viewobjects, score_scenegraph_to_viewobjects
+from semantic.scenegraphs2 import score_scenegraph_to_viewobjects, score_scenegraph_to_scenegraph
 
-#data=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/selection/')
+from dataloading.data_loading import SynthiaDataset
+data=SynthiaDataset('data/SYNTHIA-SEQS-04-SUMMER/dense/', return_graph_data=True)
+
+## Graph data sanity check
+idx=len(data)-1
+rgb=cv2.imread(data.image_paths[idx])
+vo= data.image_viewobjects[idx]
+sg= data.image_scenegraphs[idx]
+
+for v in vo: v.draw_on_image(rgb)
+
+cv2.imshow("",rgb); cv2.waitKey()
+quit()
+
+
+## Extract images
+# omni='Omni_F'
+# name='10.png'
+# for idx, p in enumerate(data.image_paths):
+#     if omni in p and name in p: break
+# print('idx',idx)
+
+# rgb=cv2.imread(data.image_paths[idx])
+# vo =data.image_viewobjects[idx]
+# for v in vo: v.draw_on_image(rgb, draw_label=True)
+
+# cv2.imshow("",rgb); cv2.waitKey()
+# cv2.imwrite(f'img-{omni}-{idx}.png',rgb)
+# quit()
+
 
 #CHECK DO CREATION
 # if False:

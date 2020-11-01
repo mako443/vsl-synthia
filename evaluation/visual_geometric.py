@@ -69,39 +69,6 @@ if __name__ == "__main__":
     # data_winter_test =SynthiaDataset('data/SYNTHIA-SEQS-04-WINTER/test', transform=transform, return_graph_data=True)
 
     #TODO: sort by model
-    if 'gather-summer' in sys.argv:
-        pass
-        
-        #GE
-        # EMBED_DIM_GEOMETRIC=512
-        # geometric_embedding=GeometricEmbedding(EMBED_DIM_GEOMETRIC)
-        # geometric_embedding_model_name='model_GeometricEmbed_lNone_dSUMMER_b12_g0.75_e512_lTML_m0.5_lr0.0005.pth'
-        # geometric_embedding.load_state_dict(torch.load('models/'+geometric_embedding_model_name)); print('Using model:',geometric_embedding_model_name)
-        # geometric_embedding.eval(); geometric_embedding.cuda()
-        
-        # loader=DataLoader(data_summer_train, batch_size=BATCH_SIZE, num_workers=2, pin_memory=True, shuffle=False) 
-        # gather_GE_vectors(loader, geometric_embedding)
-
-        # loader=DataLoader(data_summer_test , batch_size=BATCH_SIZE, num_workers=2, pin_memory=True, shuffle=False) 
-        # gather_GE_vectors(loader, geometric_embedding)  
-
-        # #VGE-CO
-        # EMBED_DIM_GEOMETRIC=1024               
-        # resnet=create_image_model_resnet_18()
-        # vge_co_model=VisualGraphEmbeddingCombined(resnet, EMBED_DIM_GEOMETRIC)
-        # vge_co_model_name='model_VGE-NV-CO_lNone_b12_g0.75_e1024_sTrue_m0.5_dsummer_lr0.01.pth'
-        # vge_co_model.load_state_dict(torch.load('models/'+vge_co_model_name)); print('Model:',vge_co_model_name)
-        # vge_co_model.eval()
-        # vge_co_model.cuda()
-        
-        # loader=DataLoader(data_summer_train, batch_size=BATCH_SIZE, num_workers=2, pin_memory=True, shuffle=False) 
-        # gather_VGE_CO_vectors(loader, vge_co_model, "VGE-NV-CO-summer")
-
-        # loader=DataLoader(data_summer_test , batch_size=BATCH_SIZE, num_workers=2, pin_memory=True, shuffle=False)    
-        # gather_VGE_CO_vectors(loader, vge_co_model, "VGE-NV-CO-summer")
-
-        # loader=DataLoader(data_summer_dense , batch_size=BATCH_SIZE, num_workers=2, pin_memory=True, shuffle=False)    
-        # gather_VGE_CO_vectors(loader, vge_co_model, "VGE-NV-CO-summer")  
 
     if 'gather-GE' in sys.argv:
         BATCH_SIZE=12

@@ -146,7 +146,6 @@ def score_scenegraph_to_viewobjects(scene_graph, view_objects, unused_factor=0.5
                 s_corner_obj= 1.0- ( np.linalg.norm(CORNERS[CORNER_NAMES.index(obj_sgo.corner)] - obj_vo.centroid_i[0:2]/(IMAGE_WIDTH, IMAGE_HEIGHT)) - np.min(obj_vo_corner_dists) ) / np.max(obj_vo_corner_dists)
 
                 s_nn= 1.0 - ( np.linalg.norm(sub_vo.centroid_c - obj_vo.centroid_c) - np.min(sub_nn_dists) ) / np.max(sub_nn_dists)
-
                 
                 s_ground= s_reltype * s_color_sub * s_color_obj * s_corner_sub * s_corner_obj * s_nn #TODO: reformulate rel-type in same fashion?
                 
