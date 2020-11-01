@@ -21,7 +21,7 @@ from visualgeometric.geometric_embedding import GeometricEmbedding, PairwiseRank
 Module to train a simple Graph-Embedding model to score the similarity of graphs (using no visual information)
 '''
 IMAGE_LIMIT=None
-BATCH_SIZE=12
+BATCH_SIZE=32
 LR_GAMMA=0.75
 EMBED_DIM_GEOMETRIC=100
 SHUFFLE=True
@@ -29,7 +29,7 @@ MARGIN=0.5
 
 DATASET='SUMMER' #summer-dawn
 
-LR= 5e-4 #Tested as best on S3D
+LR= float(sys.argv[-1]) #Tested as best on S3D
 
 print(f'Geometric Embedding training: image limit: {IMAGE_LIMIT} ds: {DATASET} bs: {BATCH_SIZE} lr gamma: {LR_GAMMA} embed-dim: {EMBED_DIM_GEOMETRIC} margin: {MARGIN} lr:{LR}')
 
@@ -45,7 +45,7 @@ best_loss=np.inf
 best_model=None
 
 
-#for lr in (5e-4*8, 5e-4*4, 5e-4, 5e-4/4, 5e-4/8):
+#for lr in (8e-3, 4e-3, 1e-3):
 for lr in (LR,):
     print('\n\nlr: ',lr)
 
@@ -89,7 +89,7 @@ for lr in (LR,):
         best_model=model
 
 print('\n----')           
-model_name=f'model_GeometricEmbed_l{IMAGE_LIMIT}_d{DATASET}_b{BATCH_SIZE}_g{LR_GAMMA:0.2f}_e{EMBED_DIM_GEOMETRIC}_m{MARGIN}_lr{LR}.pth'
+model_name=f'model_GeometricEmbed-TripReal_l{IMAGE_LIMIT}_d{DATASET}_b{BATCH_SIZE}_g{LR_GAMMA:0.2f}_e{EMBED_DIM_GEOMETRIC}_m{MARGIN}_lr{LR}.pth'
 print('Saving best model',model_name)
 torch.save(best_model.state_dict(),model_name)
 
@@ -102,4 +102,4 @@ plt.xlabel('Epoch')
 plt.ylabel('Loss')
 plt.legend()
 #plt.show()
-plt.savefig(f'loss_GraphEmbed_l{IMAGE_LIMIT}_d{DATASET}_b{BATCH_SIZE}_g{LR_GAMMA:0.2f}_e{EMBED_DIM_GEOMETRIC}_m{MARGIN}_lr{LR}.png')    
+plt.savefig(f'loss_GeometricEmbed-TripReal_l{IMAGE_LIMIT}_d{DATASET}_b{BATCH_SIZE}_g{LR_GAMMA:0.2f}_e{EMBED_DIM_GEOMETRIC}_m{MARGIN}_lr{LR}.png')    

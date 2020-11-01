@@ -107,7 +107,7 @@ if __name__ == "__main__":
         BATCH_SIZE=12
         EMBED_DIM_GEOMETRIC=100
         geometric_embedding=GeometricEmbedding(EMBED_DIM_GEOMETRIC)
-        geometric_embedding_model_name='model_GeometricEmbed_lNone_dSUMMER_b12_g0.75_e100_m0.5_lr0.0005.pth'
+        geometric_embedding_model_name='model_GeometricEmbed-TripReal_lNone_dSUMMER_b32_g0.75_e100_m0.5_lr0.001.pth'
         geometric_embedding.load_state_dict(torch.load('models/'+geometric_embedding_model_name)); print('Using model:',geometric_embedding_model_name)
         geometric_embedding.eval(); geometric_embedding.cuda()
         

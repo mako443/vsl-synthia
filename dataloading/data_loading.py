@@ -122,9 +122,14 @@ class SynthiaDatasetTriplet(SynthiaDataset):
         #TODO/better: based on location and angle | needs to resolve angle bugs?
         
         #CARE: Thresholds currently in steps between images, calculated from the full dataset -> independent of the split!
-        self.positive_thresh=(7.5, np.pi/3) # AND-combined
-        self.negative_thresh=(50, np.pi*2/3) # OR-combined
+        # self.positive_thresh=(7.5, np.pi/3) # AND-combined
+        # self.negative_thresh=(50, np.pi*2/3) # OR-combined
+
+        self.positive_thresh=(5, np.pi/4) # AND-combined
+        self.negative_thresh=(50, np.pi/2.1) # AND-combined        
         #self.image_frame_indices=np.array([ int(path.split("/")[-1].split(".")[0]) for path in self.image_paths ])
+
+        print('###### CARE: RESET TRIPLETS?!###########')
 
     def __getitem__(self,anchor_index):
         #anchor_frame_index=self.image_frame_indices[anchor_index]
@@ -146,7 +151,8 @@ class SynthiaDatasetTriplet(SynthiaDataset):
 
         pos_dists[anchor_index]=0
         ori_dists[anchor_index]=0
-        indices= (pos_dists>self.negative_thresh[0]) | (ori_dists>self.negative_thresh[1]) # OR-combine
+        # indices= (pos_dists>self.negative_thresh[0]) | (ori_dists>self.negative_thresh[1]) # OR-combine
+        indices= (pos_dists>self.negative_thresh[0]) & (ori_dists>self.negative_thresh[1]) # AND-combine
         indices=np.argwhere(indices==True).flatten()
         assert len(indices)>0
         negative_index=np.random.choice(indices)    

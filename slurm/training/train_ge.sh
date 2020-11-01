@@ -2,7 +2,7 @@
 #SBATCH --job-name="SYN GE train"
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=8
-#SBATCH --gres=gpu:1,VRAM:12G
+#SBATCH --gres=gpu:1,VRAM:16G
 #SBATCH --mem=32G
 #SBATCH --time=2:30:00
 #SBATCH --mail-type=NONE

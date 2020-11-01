@@ -3,7 +3,6 @@ import pickle
 import numpy as np
 import torch_geometric
 import torch
-from semantic.imports import SceneGraph, SceneGraphObject
 
 '''
 Create the feature dictionaries for vertices and edges

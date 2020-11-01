@@ -7,7 +7,7 @@ import torch
 from torchvision import transforms
 from torch_geometric.data import DataLoader #Use the PyG DataLoader
 
-from evaluation.evaluation_functions import eval_featureVectors, get_split_indices
+from evaluation.evaluation_functions import eval_featureVectors, print_topK
 from dataloading.data_loading import SynthiaDataset
 from retrieval.netvlad import NetvladModel, NetvladFCModel
 from visualgeometric.visual_geometric_embedding import create_image_model_resnet_18
@@ -85,20 +85,14 @@ if __name__=='__main__':
         features_name_query='features_NV_mNV-SYN-summer_dSUMMER-test.pkl'
         features_db, features_query=pickle.load(open('evaluation_res/'+features_name_db, 'rb')), pickle.load(open('evaluation_res/'+features_name_query, 'rb')); print('features:',features_name_db, features_name_query)
 
-        pos_results, ori_results=eval_featureVectors(data_summer_train, data_summer_test, features_db, features_query, similarity='l2')
-        print(pos_results, ori_results,'\n') 
-
-        features_name_db   ='features_NV_mNV-SYN-summer_dSUMMER-dense.pkl'
-        features_name_query='features_NV_mNV-SYN-summer_dSUMMER-test.pkl'
-        features_db, features_query=pickle.load(open('evaluation_res/'+features_name_db, 'rb')), pickle.load(open('evaluation_res/'+features_name_query, 'rb')); print('features:',features_name_db, features_name_query)
-        pos_results, ori_results=eval_featureVectors(data_summer_dense, data_summer_test, features_db, features_query, similarity='l2')
-        print(pos_results, ori_results,'\n')  
+        thresh_results=eval_featureVectors(data_summer_train, data_summer_test, features_db, features_query, similarity='l2')
+        print_topK(thresh_results)
 
         features_name_db   ='features_NV_mNV-SYN-summer_dSUMMER-dense.pkl'
         features_name_query='features_NV_mNV-SYN-summer_dDAWN-test.pkl'
         features_db, features_query=pickle.load(open('evaluation_res/'+features_name_db, 'rb')), pickle.load(open('evaluation_res/'+features_name_query, 'rb')); print('features:',features_name_db, features_name_query)
-        pos_results, ori_results=eval_featureVectors(data_summer_dense, data_dawn_test, features_db, features_query, similarity='l2')
-        print(pos_results, ori_results,'\n')           
+        thresh_results=eval_featureVectors(data_summer_dense, data_dawn_test, features_db, features_query, similarity='l2')
+        print_topK(thresh_results)         
 
     if 'NV-SYN-FC' in sys.argv:
         features_name_db   ='features_NV_mNV-SYN-FC-summer_dSUMMER-train.pkl'
@@ -119,14 +113,14 @@ if __name__=='__main__':
         features_name_db   ='features_NV_mNV-Pitts_dSUMMER-dense.pkl'
         features_name_query='features_NV_mNV-Pitts_dSUMMER-test.pkl'
         features_db, features_query=pickle.load(open('evaluation_res/'+features_name_db, 'rb')), pickle.load(open('evaluation_res/'+features_name_query, 'rb')); print('features:',features_name_db, features_name_query)
-        pos_results, ori_results=eval_featureVectors(data_summer_dense, data_summer_test, features_db, features_query, similarity='l2')
-        print(pos_results, ori_results,'\n')  
+        thresh_results=eval_featureVectors(data_summer_dense, data_summer_test, features_db, features_query, similarity='l2')
+        print_topK(thresh_results) 
 
         features_name_db   ='features_NV_mNV-Pitts_dSUMMER-dense.pkl'
         features_name_query='features_NV_mNV-Pitts_dDAWN-test.pkl'
         features_db, features_query=pickle.load(open('evaluation_res/'+features_name_db, 'rb')), pickle.load(open('evaluation_res/'+features_name_query, 'rb')); print('features:',features_name_db, features_name_query)
-        pos_results, ori_results=eval_featureVectors(data_summer_dense, data_dawn_test, features_db, features_query, similarity='l2')
-        print(pos_results, ori_results,'\n')               
+        thresh_results=eval_featureVectors(data_summer_dense, data_dawn_test, features_db, features_query, similarity='l2')
+        print_topK(thresh_results)              
 
 
     # #Eval Summer->Summer (sending every 8-th to query, rest database)
